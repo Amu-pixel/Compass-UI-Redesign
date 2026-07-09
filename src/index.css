@@ -1,0 +1,75 @@
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=Inter:wght@400;500;600;700;800&family=Sora:wght@600;700;800&display=swap');
+@import "tailwindcss";
+
+:root {
+  color: #15161a;
+  background: #fafaf8;
+  font-family: Inter, system-ui, sans-serif;
+}
+
+@theme {
+  --font-sans: Inter, system-ui, sans-serif;
+  --font-display: Sora, Inter, system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+  --color-cardinal: #9e1b32;
+  --color-cardinal-dark: #711425;
+  --color-cardinal-tint: #fbebee;
+  --color-ink: #15161a;
+  --color-slate-copy: #4b5566;
+  --color-slate-soft: #8891a0;
+  --color-paper: #fafaf8;
+  --color-paper-dim: #f2f1ed;
+  --color-companion: #3454d1;
+  --color-companion-tint: #eef1fd;
+  --color-success: #157f3c;
+  --color-success-tint: #e9f7ee;
+  --color-warn: #b4690e;
+  --color-warn-tint: #fcf2e3;
+  --color-danger: #b3261e;
+  --color-danger-tint: #fbeaea;
+  --color-line: #e6e4dd;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+}
+
+button, input, textarea, select {
+  font: inherit;
+}
+
+button, a, input, textarea, select {
+  outline-color: #3454d1;
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+.animate-in {
+  animation: fadeUp 560ms ease both;
+}
+
+.pulse-soft {
+  animation: pulseSoft 2s ease-in-out infinite;
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulseSoft {
+  0%, 100% { transform: scale(1); opacity: 0.78; }
+  50% { transform: scale(1.06); opacity: 1; }
+}
