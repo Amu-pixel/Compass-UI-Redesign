@@ -1,12 +1,13 @@
 import { ArrowRight, BarChart3, BookOpenCheck, Brain, CalendarDays, FileCheck2, Filter, GraduationCap, LibraryBig, LogOut, Search, Sparkles } from 'lucide-react';
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { courses } from '../data/mockData';
 import { Badge, Button, ConfidenceBadge, EmptyState, Toast } from '../components/ui';
 
 export default function CoursesPage() {
   const { user, logout } = useAuth();
+  const navigate = useNavigate();
   const [query, setQuery] = useState('');
   const [toast, setToast] = useState('');
   const filteredCourses = courses.filter((course) => {
@@ -17,6 +18,14 @@ export default function CoursesPage() {
   function notify(message: string) {
     setToast(message);
     setTimeout(() => setToast(''), 1800);
+  }
+
+  function handleSidebarNav(item: string) {
+    if (item === 'Courses') return; // already here
+    if (item === 'AI Tutor') { navigate('/demo/learn'); return; }
+    if (item === 'Assignments') { navigate('/demo/assessment'); return; }
+    if (item === 'Modules') { navigate('/demo'); return; }
+    notify(`${item} — available from your enrolled course pages.`);
   }
 
   return (
@@ -32,20 +41,41 @@ export default function CoursesPage() {
             <p className="text-xs text-white/55">Student workspace</p>
           </div>
         </div>
-        <nav className="mt-10 space-y-2">
-          {['Dashboard', 'Courses', 'Modules', 'AI Tutor', 'Assignments', 'Progress', 'Resources', 'Support'].map((item) => (
-            <button
-              key={item}
-              type="button"
-              aria-current={item === 'Dashboard' ? 'page' : undefined}
-              onClick={() => notify(item === 'Dashboard' ? 'You are already viewing your learning dashboard.' : `${item} opens from the full LMS workspace in a later phase.`)}
-              className={`w-full rounded-2xl px-4 py-3 text-left text-sm font-semibold transition ${item === 'Dashboard' ? 'bg-white text-ink' : 'text-white/68 hover:bg-white/10 hover:text-white'}`}
-            >
-              {item}
-            </button>
-          ))}
+        <nav className="mt-10 space-y-2" aria-label="Student navigation">
+          {[
+            { label: 'Courses', current: true },
+            { label: 'Modules', route: '/demo' },
+            { label: 'AI Tutor', route: '/demo/learn' },
+            { label: 'Assignments', route: '/demo/assessment' },
+            { label: 'Progress' },
+            { label: 'Resources' },
+            { label: 'Support' },
+          ].map((item) => {
+            if (item.route) {
+              return (
+                <Link
+                  key={item.label}
+                  to={item.route}
+                  className="flex w-full items-center rounded-2xl px-4 py-3 text-left text-sm font-semibold text-white/68 transition hover:bg-white/10 hover:text-white"
+                >
+                  {item.label}
+                </Link>
+              );
+            }
+            return (
+              <button
+                key={item.label}
+                type="button"
+                aria-current={item.current ? 'page' : undefined}
+                onClick={() => handleSidebarNav(item.label)}
+                className={`w-full rounded-2xl px-4 py-3 text-left text-sm font-semibold transition ${item.current ? 'bg-white text-ink' : 'text-white/68 hover:bg-white/10 hover:text-white'}`}
+              >
+                {item.label}
+              </button>
+            );
+          })}
         </nav>
-        <button onClick={logout} className="absolute bottom-5 left-5 right-5 flex items-center gap-2 rounded-2xl px-4 py-3 text-sm font-semibold text-white/70 hover:bg-white/10">
+        <button type="button" aria-label="Sign out" onClick={logout} className="absolute bottom-5 left-5 right-5 flex items-center gap-2 rounded-2xl px-4 py-3 text-sm font-semibold text-white/70 hover:bg-white/10">
           <LogOut size={17} />
           Sign out
         </button>
@@ -88,25 +118,32 @@ export default function CoursesPage() {
             </div>
 
             <div className="grid gap-4 sm:grid-cols-3 xl:grid-cols-1">
-              {[
-                ['Assignments', 'Draft reflection due Monday', FileCheck2],
-                ['Resources', 'Week 4 slides connected', LibraryBig],
-                ['Progress', '3 courses above pace', BarChart3],
-              ].map(([title, detail, Icon]) => {
-                const TypedIcon = Icon as typeof FileCheck2;
-                return (
-                  <button
-                    key={title as string}
-                    type="button"
-                    onClick={() => notify(`${title} details open from the full learning workspace.`)}
-                    className="premium-focus rounded-3xl border border-white/10 bg-white/[0.045] p-5 text-left outline-none hover:border-ai-cyan/30 focus-visible:ring-2 focus-visible:ring-ai-cyan/70"
-                  >
-                    <TypedIcon className="text-ai-cyan" size={20} />
-                    <p className="mt-4 font-display text-lg font-bold text-mist">{title as string}</p>
-                    <p className="mt-2 text-sm leading-6 text-mist-muted">{detail as string}</p>
-                  </button>
-                );
-              })}
+              <Link
+                to="/demo/assessment"
+                className="premium-focus rounded-3xl border border-white/10 bg-white/[0.045] p-5 text-left outline-none hover:border-ai-cyan/30 focus-visible:ring-2 focus-visible:ring-ai-cyan/70"
+              >
+                <FileCheck2 className="text-ai-cyan" size={20} />
+                <p className="mt-4 font-display text-lg font-bold text-mist">Assignments</p>
+                <p className="mt-2 text-sm leading-6 text-mist-muted">Draft reflection due Monday</p>
+              </Link>
+              <button
+                type="button"
+                onClick={() => notify('Resources are available from your enrolled course pages.')}
+                className="premium-focus rounded-3xl border border-white/10 bg-white/[0.045] p-5 text-left outline-none hover:border-ai-cyan/30 focus-visible:ring-2 focus-visible:ring-ai-cyan/70"
+              >
+                <LibraryBig className="text-ai-cyan" size={20} />
+                <p className="mt-4 font-display text-lg font-bold text-mist">Resources</p>
+                <p className="mt-2 text-sm leading-6 text-mist-muted">Week 4 slides connected</p>
+              </button>
+              <button
+                type="button"
+                onClick={() => notify('Progress tracking is available from your enrolled course pages.')}
+                className="premium-focus rounded-3xl border border-white/10 bg-white/[0.045] p-5 text-left outline-none hover:border-ai-cyan/30 focus-visible:ring-2 focus-visible:ring-ai-cyan/70"
+              >
+                <BarChart3 className="text-ai-cyan" size={20} />
+                <p className="mt-4 font-display text-lg font-bold text-mist">Progress</p>
+                <p className="mt-2 text-sm leading-6 text-mist-muted">3 courses above pace</p>
+              </button>
             </div>
           </div>
 

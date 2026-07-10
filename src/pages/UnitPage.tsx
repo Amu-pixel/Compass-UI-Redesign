@@ -1,9 +1,39 @@
-import { ChevronLeft, ChevronRight, FileText, Megaphone, Play, Send, Sparkles } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import {
+  AlertCircle,
+  ArrowRight,
+  BookOpen,
+  Brain,
+  CalendarClock,
+  CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
+  ClipboardList,
+  Download,
+  ExternalLink,
+  FileText,
+  GraduationCap,
+  Info,
+  Lock,
+  Megaphone,
+  Play,
+  Send,
+  Sparkles,
+  TrendingUp,
+} from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { aiResponses, announcements, quickActions, slides, supportPathways, unit, unitTabs } from '../data/mockData';
-import { Button, Card, ChatBubble, ConfidenceBadge, LoadingPill, Tabs } from '../components/ui';
+import {
+  aiResponses,
+  announcements,
+  quickActions,
+  slides,
+  supportPathways,
+  unit,
+  unitTabs,
+} from '../data/mockData';
+import { Badge, Button, Card, ChatBubble, ConfidenceBadge, LoadingPill, Tabs, Toast } from '../components/ui';
+import { cn } from '../utils/classNames';
 
 type Message = { role: string; text: string; source?: string };
 
@@ -16,19 +46,19 @@ export default function UnitPage() {
   const [loading, setLoading] = useState(false);
   const [question, setQuestion] = useState('');
   const [showSupport, setShowSupport] = useState(false);
+  const [toast, setToast] = useState('');
+  const chatEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const stored = window.localStorage.getItem('ailc-memory');
     if (stored) {
-      setMessages(JSON.parse(stored) as Message[]);
+      try {
+        setMessages(JSON.parse(stored) as Message[]);
+      } catch {
+        setMessages(getWelcomeMessage(user?.name));
+      }
     } else {
-      setMessages([
-        {
-          role: 'ai',
-          text: `Welcome ${user?.name || 'back'}. I am ready to help with ${unit.topic}. Last time we discussed how shear force changes the bending moment diagram.`,
-          source: 'Week 4 Lecture, Slide 18',
-        },
-      ]);
+      setMessages(getWelcomeMessage(user?.name));
     }
   }, [user?.name]);
 
@@ -38,12 +68,34 @@ export default function UnitPage() {
     }
   }, [messages]);
 
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages, loading]);
+
+  function notify(msg: string) {
+    setToast(msg);
+    setTimeout(() => setToast(''), 2000);
+  }
+
+  function getWelcomeMessage(name?: string): Message[] {
+    return [
+      {
+        role: 'ai',
+        text: `Welcome ${name || 'back'}. I am ready to help with ${unit.topic}. Last time we discussed how shear force changes the bending moment diagram. Ask a question or use a quick action below.`,
+        source: 'Week 4 Lecture, Slide 18',
+      },
+    ];
+  }
+
   function ask(action: string) {
-    const response = aiResponses[action] || aiResponses['Explain this slide'];
+    const response = aiResponses[action] ?? aiResponses['Explain this slide'];
     setMessages((items) => [...items, { role: 'student', text: action }]);
     setLoading(true);
     setTimeout(() => {
-      setMessages((items) => [...items, { role: 'ai', text: response, source: 'Week 4 Lecture Slides, Slide 18' }]);
+      setMessages((items) => [
+        ...items,
+        { role: 'ai', text: response, source: 'Week 4 Lecture Slides, Slide 18' },
+      ]);
       setLoading(false);
     }, 650);
   }
@@ -58,15 +110,20 @@ export default function UnitPage() {
     const incoming = question;
     const low = incoming.toLowerCase();
     setQuestion('');
-    if (low.includes('still confused') || low.includes("still don't understand") || low.includes('still do not understand') || low.includes('still stuck') || low.includes('confused')) {
+    if (
+      low.includes('still confused') ||
+      low.includes("still don't understand") ||
+      low.includes('still do not understand') ||
+      low.includes('still stuck') ||
+      low.includes('confused')
+    ) {
       setShowSupport(true);
       setMessages((items) => [
         ...items,
         { role: 'student', text: incoming },
         {
           role: 'ai',
-          text:
-            'Thanks for telling me. Since this is still unclear, I recommend moving into a support stream: group discussion to compare reasoning, 1 on 1 mentoring for study strategy, or a lecturer catch-up if the issue is about assessment expectations. Bring these questions: where does shear become moment, how do I identify maximum moment, and how can I explain my reasoning without getting an assessment answer?',
+          text: 'Thanks for telling me. Since this is still unclear, I recommend moving into a support stream: group discussion to compare reasoning, 1-on-1 mentoring for study strategy, or a lecturer catch-up if the issue is about assessment expectations. Bring these questions: where does shear become moment, how do I identify maximum moment, and how can I explain my reasoning without getting an assessment answer?',
           source: 'Week 4 Lecture Slides, Slide 18',
         },
       ]);
@@ -78,7 +135,7 @@ export default function UnitPage() {
         { role: 'student', text: incoming },
         {
           role: 'ai',
-          text: "I'm not confident enough to answer this using the approved unit materials. I recommend asking your lecturer or PASS facilitator, and I have flagged this question for lecturer review.",
+          text: "I'm not confident enough to answer this using the approved unit materials. I recommend asking your lecturer or PASS facilitator — I have flagged this question for lecturer review.",
           source: 'Escalated to lecturer review queue',
         },
       ]);
@@ -88,185 +145,776 @@ export default function UnitPage() {
   }
 
   return (
-    <div className="mx-auto max-w-7xl px-5 py-6 sm:px-8">
-      <div className="mb-5 rounded-[28px] border border-line bg-white p-5 shadow-sm">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <p className="font-mono text-xs font-semibold uppercase text-slate-soft">Course content</p>
-            <h2 className="mt-1 font-display text-3xl font-bold">{unit.name}</h2>
-            <p className="mt-2 text-slate-copy">A familiar Blackboard unit page with AI assistance embedded directly into materials and assessments.</p>
+    <div className="animate-page mx-auto max-w-7xl px-5 py-6 sm:px-8">
+      {toast && <Toast message={toast} />}
+
+      {/* ── Course identity header ── */}
+      <div className="mb-5 overflow-hidden rounded-[24px] border border-line bg-white shadow-sm">
+        {/* Course image strip */}
+        <div
+          className="relative h-24 sm:h-28"
+          style={{ background: 'linear-gradient(135deg, #15161A 0%, #9E1B32 100%)' }}
+        >
+          <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMSIgY3k9IjEiIHI9IjEiIGZpbGw9InJnYmEoMjU1LDI1NSwyNTUsMC4wNikiLz48L3N2Zz4=')] opacity-40" />
+          <div className="absolute left-5 top-4 flex items-center gap-2 sm:left-6">
+            <span className="rounded-full bg-night/70 px-3 py-1 font-mono text-xs font-bold text-white backdrop-blur">
+              {unit.code}
+            </span>
+            <span className="rounded-full bg-night/50 px-3 py-1 font-mono text-xs font-semibold text-white/80 backdrop-blur">
+              Semester 2, 2026
+            </span>
           </div>
-          <ConfidenceBadge />
+          <div className="absolute bottom-4 right-5 flex items-center gap-2 sm:right-6">
+            <ConfidenceBadge />
+          </div>
         </div>
-        <div className="mt-5">
-          <Tabs items={unitTabs} active={activeTab} onChange={setActiveTab} label="Unit sections" />
+
+        {/* Course meta */}
+        <div className="px-5 py-4 sm:px-6">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              {/* Breadcrumb */}
+              <nav aria-label="Breadcrumb" className="mb-2 flex flex-wrap items-center gap-1.5">
+                <Link to="/courses" className="font-mono text-xs font-semibold text-slate-soft hover:text-companion">
+                  Courses
+                </Link>
+                <span className="text-xs text-slate-soft">/</span>
+                <span className="font-mono text-xs font-semibold text-ink">{unit.code}</span>
+              </nav>
+              <h1 className="font-display text-2xl font-bold text-ink sm:text-3xl">{unit.name}</h1>
+              <div className="mt-2 flex flex-wrap items-center gap-3">
+                <div className="flex items-center gap-1.5 text-sm text-slate-copy">
+                  <GraduationCap size={15} className="text-slate-soft" />
+                  Dr Avery Tan
+                </div>
+                <div className="flex items-center gap-1.5 text-sm text-slate-copy">
+                  <CalendarClock size={15} className="text-slate-soft" />
+                  {unit.week} — {unit.topic}
+                </div>
+                <div className="flex items-center gap-1.5 text-sm text-slate-copy">
+                  <TrendingUp size={15} className="text-success" />
+                  <span className="font-semibold text-success">68% progress</span>
+                </div>
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Button to="/demo/assessment" variant="secondary" size="sm">
+                <ClipboardList size={14} />
+                Assignments
+              </Button>
+              <Button to="/demo/learn" variant="ai" size="sm">
+                <Brain size={14} />
+                AI Tutor
+              </Button>
+            </div>
+          </div>
+
+          {/* Progress bar */}
+          <div className="mt-4">
+            <div className="mb-1.5 flex justify-between text-xs font-semibold">
+              <span className="text-slate-copy">Course progress</span>
+              <span className="text-ink">68%</span>
+            </div>
+            <div className="h-2 rounded-full bg-paper-dim">
+              <div className="h-2 rounded-full bg-gradient-to-r from-companion to-companion/70" style={{ width: '68%' }} />
+            </div>
+          </div>
+
+          {/* Tabs */}
+          <div className="mt-5">
+            <Tabs items={unitTabs} active={activeTab} onChange={setActiveTab} label="Unit sections" />
+          </div>
         </div>
       </div>
 
+      {/* ── Tab content ── */}
       {activeTab === 'Unit Materials' && (
-        <div className="grid gap-5 xl:grid-cols-[250px_1fr_360px]">
-          <Card className="h-fit">
-            <p className="mb-4 font-mono text-xs font-semibold uppercase text-slate-soft">Lecture weeks</p>
-            <div className="space-y-2">
-              {slides.map((slide, index) => (
-                <button
-                  key={slide.title}
-                  type="button"
-                  aria-pressed={activeSlideIndex === index}
-                  onClick={() => selectLectureWeek(index)}
-                  className={`w-full rounded-2xl border px-3 py-3 text-left text-sm transition ${activeSlideIndex === index ? 'border-cardinal bg-cardinal-tint text-cardinal' : 'border-line hover:bg-paper'}`}
-                >
-                  <span className="font-semibold">{slide.title}</span>
-                  <span className="mt-1 block text-xs text-slate-copy">{activeSlideIndex === index ? 'Selected' : slide.status}</span>
-                </button>
-              ))}
-            </div>
-          </Card>
-
-          <section>
-            <Card className="overflow-hidden p-0">
-              <div className="border-b border-line bg-white px-5 py-4">
-                <p className="font-mono text-xs font-semibold uppercase text-companion">{unit.week} / Lecture Slides / Slide {currentSlide}</p>
-                <h2 className="mt-1 font-display text-2xl font-bold">{unit.topic}</h2>
-              </div>
-              <div className="grid min-h-[510px] place-items-center bg-paper-dim p-6">
-                <div className="w-full max-w-3xl rounded-[28px] bg-white p-8 shadow-sm">
-                  <p className="font-mono text-xs font-semibold text-slate-soft">MOCK PDF VIEWER</p>
-                  <h3 className="mt-5 font-display text-3xl font-bold">Moment changes according to the area under the shear force diagram.</h3>
-                  <div className="mt-8 grid gap-5 md:grid-cols-2">
-                    <div className="rounded-2xl border border-line p-5">
-                      <p className="text-sm font-bold">Key idea</p>
-                      <p className="mt-2 text-sm leading-6 text-slate-copy">Positive shear increases moment. Negative shear decreases moment. A zero shear point often marks a maximum or minimum moment.</p>
-                    </div>
-                    <div className="rounded-2xl border border-companion/25 bg-gradient-to-br from-companion-tint to-white p-5 shadow-[0_0_30px_rgba(52,84,209,0.12)]">
-                      <p className="flex items-center gap-2 text-sm font-bold text-companion"><Sparkles size={16} /> AI Companion available</p>
-                      <p className="mt-2 text-sm leading-6 text-slate-copy">This slide is indexed for grounded explanations, scenarios, quizzes, and lecturer escalation.</p>
-                    </div>
-                  </div>
-                  <div className="mt-8 h-28 rounded-2xl border border-dashed border-companion/40 bg-gradient-to-r from-white via-companion-tint to-[#f3e8ff]" />
-                </div>
-              </div>
-              <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line px-5 py-4">
-                <div className="flex gap-2">
-                  <Button variant="secondary" onClick={() => setCurrentSlide((s) => Math.max(1, s - 1))}><ChevronLeft size={16} />Prev</Button>
-                  <Button variant="secondary" onClick={() => setCurrentSlide((s) => s + 1)}>Next<ChevronRight size={16} /></Button>
-                </div>
-                <Button onClick={() => ask('Explain this slide')}>Ask AI Learning Companion</Button>
-              </div>
-            </Card>
-          </section>
-
-          <Card className="h-fit border-companion/25 bg-gradient-to-br from-white to-companion-tint/70 shadow-[0_0_36px_rgba(52,84,209,0.12)]">
-            <div className="mb-4 flex items-center justify-between gap-3">
-              <h2 className="flex items-center gap-2 font-display text-lg font-bold"><Sparkles className="text-companion" size={18} /> AI Companion</h2>
-              <ConfidenceBadge />
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              {quickActions.map((action) => (
-                <button key={action} onClick={() => ask(action)} className="rounded-2xl border border-white bg-white/85 px-3 py-3 text-left text-xs font-semibold transition hover:border-companion hover:bg-white">
-                  {action}
-                </button>
-              ))}
-            </div>
-            <div className="mt-5 max-h-[360px] space-y-3 overflow-y-auto rounded-2xl bg-white/70 p-3">
-              {messages.map((message, index) => <ChatBubble key={`${message.text}-${index}`} {...message} />)}
-              {loading && <LoadingPill label="Searching lecturer-approved unit material" />}
-            </div>
-            <div className="mt-4 rounded-2xl border border-companion/20 bg-white/80 p-3">
-              <p className="flex items-center gap-2 text-xs font-bold uppercase text-companion"><Sparkles size={14} /> Further learning options</p>
-              {!showSupport ? (
-                <p className="mt-2 text-xs leading-5 text-slate-copy">
-                  These appear when you tell the companion you are still confused or still do not understand the topic.
-                </p>
-              ) : (
-                <div className="mt-3 grid gap-2">
-                  {supportPathways.slice(0, 3).map((support) => (
-                    <button key={support.name} onClick={() => ask('Prepare support questions for me')} className="rounded-xl bg-paper px-3 py-2 text-left text-xs font-semibold hover:bg-companion-tint">
-                      {support.name}
-                      <span className="block pt-1 font-normal leading-4 text-slate-copy">{support.detail}</span>
-                    </button>
-                  ))}
-                  <div className="rounded-xl bg-companion-tint px-3 py-2 text-xs leading-5 text-slate-copy">
-                    Bring: "Can you check my shear-to-moment link?", "Where should maximum moment occur?", and "How can I explain this without an assessment answer?"
-                  </div>
-                </div>
-              )}
-            </div>
-            <div className="mt-4 flex gap-2 rounded-full border border-line bg-white p-2">
-              <input value={question} onChange={(event) => setQuestion(event.target.value)} onKeyDown={(event) => event.key === 'Enter' && submitQuestion()} className="min-w-0 flex-1 px-2 text-sm" placeholder="Ask about this slide" />
-              <button type="button" onClick={submitQuestion} aria-label="Send slide question" className="rounded-full bg-companion p-2 text-white"><Send size={16} /></button>
-            </div>
-          </Card>
-        </div>
+        <UnitMaterialsTab
+          slides={slides}
+          activeSlideIndex={activeSlideIndex}
+          currentSlide={currentSlide}
+          messages={messages}
+          loading={loading}
+          showSupport={showSupport}
+          question={question}
+          setQuestion={setQuestion}
+          onSelectWeek={selectLectureWeek}
+          onAsk={ask}
+          onSubmitQuestion={submitQuestion}
+          onSupportAction={(action) => ask(action)}
+          chatEndRef={chatEndRef}
+          onSetCurrentSlide={setCurrentSlide}
+          onNotify={notify}
+        />
       )}
-
-      {activeTab === 'Overview' && <OverviewTab />}
+      {activeTab === 'Overview' && <OverviewTab onNotify={notify} />}
       {activeTab === 'Assessments' && <AssessmentsTab />}
       {activeTab === 'Announcements' && <AnnouncementsTab />}
-      {activeTab === 'Resources' && <ResourcesTab />}
+      {activeTab === 'Resources' && <ResourcesTab onNotify={notify} />}
     </div>
   );
 }
 
-function OverviewTab() {
+/* ── Unit Materials Tab ── */
+
+function UnitMaterialsTab({
+  slides: slideList,
+  activeSlideIndex,
+  currentSlide,
+  messages,
+  loading,
+  showSupport,
+  question,
+  setQuestion,
+  onSelectWeek,
+  onAsk,
+  onSubmitQuestion,
+  onSupportAction,
+  chatEndRef,
+  onSetCurrentSlide,
+  onNotify,
+}: {
+  slides: typeof import('../data/mockData').slides;
+  activeSlideIndex: number;
+  currentSlide: number;
+  messages: Message[];
+  loading: boolean;
+  showSupport: boolean;
+  question: string;
+  setQuestion: (v: string) => void;
+  onSelectWeek: (index: number) => void;
+  onAsk: (action: string) => void;
+  onSubmitQuestion: () => void;
+  onSupportAction: (action: string) => void;
+  chatEndRef: React.RefObject<HTMLDivElement | null>;
+  onSetCurrentSlide: React.Dispatch<React.SetStateAction<number>>;
+  onNotify: (msg: string) => void;
+}) {
   return (
-    <div className="grid gap-5 md:grid-cols-3">
-      {['Week 4 focus: bending moment diagrams', 'AI remembers previous learning', 'Lecturer-approved answers only'].map((item) => (
-        <Card key={item}>
-          <h3 className="font-display text-xl font-bold">{item}</h3>
-          <p className="mt-3 text-sm leading-6 text-slate-copy">Students keep using the LMS normally while contextual intelligence appears beside the content they already rely on.</p>
+    <div className="grid gap-5 xl:grid-cols-[220px_1fr_340px]">
+      {/* Week selector */}
+      <Card className="h-fit">
+        <p className="mb-4 font-mono text-xs font-semibold uppercase text-slate-soft">Lecture weeks</p>
+        <div className="space-y-2">
+          {slideList.map((slide, index) => {
+            const isActive = activeSlideIndex === index;
+            const statusColor =
+              slide.status === 'Complete'
+                ? 'text-success'
+                : slide.status === 'Current'
+                ? 'text-companion'
+                : slide.status === 'Next'
+                ? 'text-warn'
+                : 'text-slate-soft';
+            return (
+              <button
+                key={slide.title}
+                type="button"
+                aria-pressed={isActive}
+                onClick={() => onSelectWeek(index)}
+                className={cn(
+                  'w-full rounded-xl border px-3 py-3 text-left text-sm transition',
+                  isActive
+                    ? 'border-cardinal bg-cardinal-tint text-cardinal'
+                    : 'border-line hover:border-companion hover:bg-companion-tint',
+                )}
+              >
+                <span className="block font-semibold text-ink">
+                  {isActive ? slide.title : slide.title}
+                </span>
+                <span className={cn('mt-1 block text-xs font-semibold', isActive ? 'text-cardinal' : statusColor)}>
+                  {isActive ? '● Selected' : slide.status}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </Card>
+
+      {/* Slide viewer */}
+      <section>
+        <Card className="overflow-hidden p-0">
+          {/* Slide header */}
+          <div className="border-b border-line bg-white px-5 py-4">
+            <p className="font-mono text-xs font-semibold uppercase text-companion">
+              {unit.week} · Lecture Slides · Slide {currentSlide}
+            </p>
+            <h2 className="mt-1 font-display text-xl font-bold text-ink sm:text-2xl">{unit.topic}</h2>
+          </div>
+
+          {/* Slide content */}
+          <div className="grid min-h-[480px] place-items-center bg-paper-dim p-5 sm:p-8">
+            <div className="w-full max-w-3xl rounded-[24px] bg-white p-7 shadow-sm">
+              <div className="mb-1 flex items-center justify-between">
+                <p className="font-mono text-xs font-semibold text-slate-soft">
+                  {unit.code} · {unit.week}
+                </p>
+                <p className="font-mono text-xs font-semibold text-slate-soft">Slide {currentSlide}</p>
+              </div>
+              <h3 className="mt-5 font-display text-2xl font-bold leading-tight text-ink sm:text-3xl">
+                Moment changes according to the area under the shear force diagram.
+              </h3>
+              <div className="mt-8 grid gap-4 sm:grid-cols-2">
+                <div className="rounded-xl border border-line bg-paper p-5">
+                  <p className="font-mono text-xs font-semibold uppercase text-slate-soft">Key idea</p>
+                  <p className="mt-3 text-sm leading-6 text-slate-copy">
+                    Positive shear increases moment. Negative shear decreases moment. A zero-shear
+                    point often marks a maximum or minimum moment.
+                  </p>
+                </div>
+                <div className="rounded-xl border border-companion/25 bg-gradient-to-br from-companion-tint to-white p-5 shadow-[0_0_24px_rgba(52,84,209,0.10)]">
+                  <p className="flex items-center gap-2 font-mono text-xs font-semibold uppercase text-companion">
+                    <Sparkles size={12} /> AI Companion
+                  </p>
+                  <p className="mt-3 text-sm leading-6 text-slate-copy">
+                    This slide is indexed for grounded explanations, worked examples, quizzes, and
+                    lecturer escalation.
+                  </p>
+                </div>
+              </div>
+              {/* Diagram placeholder */}
+              <div className="mt-6 flex h-28 items-center justify-center rounded-xl border border-dashed border-companion/30 bg-gradient-to-r from-white via-companion-tint to-[#f3e8ff]">
+                <p className="font-mono text-xs font-semibold text-slate-soft">
+                  Shear / Moment diagram
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Slide controls */}
+          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line bg-white px-5 py-4">
+            <div className="flex gap-2">
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => onSetCurrentSlide((s) => Math.max(1, s - 1))}
+              >
+                <ChevronLeft size={15} /> Prev
+              </Button>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => onSetCurrentSlide((s) => s + 1)}
+              >
+                Next <ChevronRight size={15} />
+              </Button>
+            </div>
+            <Button to="/demo/learn">
+              <Brain size={15} /> Open AI Tutor
+            </Button>
+          </div>
         </Card>
-      ))}
+      </section>
+
+      {/* AI Companion panel */}
+      <Card className="h-fit border-companion/25 bg-gradient-to-br from-white to-companion-tint/70 shadow-[0_0_36px_rgba(52,84,209,0.10)]">
+        {/* Panel header */}
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <div className="flex h-8 w-8 items-center justify-center rounded-xl border border-companion/20 bg-white text-companion shadow-sm">
+              <Brain size={15} />
+            </div>
+            <h2 className="font-display text-base font-bold text-ink">AI Companion</h2>
+          </div>
+          <ConfidenceBadge />
+        </div>
+
+        {/* Quick actions */}
+        <div className="grid grid-cols-2 gap-2">
+          {quickActions.slice(0, 6).map((action) => (
+            <button
+              key={action}
+              type="button"
+              onClick={() => onAsk(action)}
+              className="rounded-xl border border-white/80 bg-white/85 px-3 py-2.5 text-left text-xs font-semibold text-ink transition hover:border-companion hover:bg-white"
+            >
+              {action}
+            </button>
+          ))}
+        </div>
+
+        {/* Chat area */}
+        <div className="mt-4 max-h-[300px] space-y-3 overflow-y-auto rounded-xl bg-white/70 p-3">
+          {messages.map((message, index) => (
+            <ChatBubble key={`${message.role}-${index}`} {...message} />
+          ))}
+          {loading && <LoadingPill label="Searching approved unit material" />}
+          <div ref={chatEndRef} />
+        </div>
+
+        {/* Further learning options */}
+        <div className="mt-4 rounded-xl border border-companion/20 bg-white/80 p-3">
+          <p className="flex items-center gap-2 font-mono text-[10px] font-semibold uppercase text-companion">
+            <Sparkles size={12} /> Further learning options
+          </p>
+          {!showSupport ? (
+            <p className="mt-2 text-xs leading-5 text-slate-copy">
+              These appear when you tell the companion you are still confused or still do not
+              understand the topic.
+            </p>
+          ) : (
+            <div className="mt-2 grid gap-1.5">
+              {supportPathways.slice(0, 3).map((support) => (
+                <button
+                  key={support.name}
+                  type="button"
+                  onClick={() => onSupportAction('Prepare support questions for me')}
+                  className="rounded-lg bg-paper px-3 py-2 text-left text-xs font-semibold text-ink hover:bg-companion-tint"
+                >
+                  {support.name}
+                  <span className="block pt-0.5 font-normal leading-4 text-slate-soft">
+                    {support.detail}
+                  </span>
+                </button>
+              ))}
+              <div className="rounded-lg bg-companion-tint px-3 py-2 text-xs leading-5 text-slate-copy">
+                Bring: "Can you check my shear-to-moment link?", "Where should maximum moment
+                occur?", and "How can I explain this without an assessment answer?"
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Input */}
+        <div className="mt-4 flex gap-2 rounded-full border border-companion/20 bg-white/90 p-2">
+          <input
+            value={question}
+            onChange={(event) => setQuestion(event.target.value)}
+            onKeyDown={(event) => event.key === 'Enter' && onSubmitQuestion()}
+            className="min-w-0 flex-1 bg-transparent px-2 text-sm text-ink placeholder:text-slate-soft outline-none"
+            placeholder="Ask about this slide…"
+            aria-label="Ask a question about this slide"
+          />
+          <button
+            type="button"
+            onClick={onSubmitQuestion}
+            aria-label="Send slide question"
+            className="flex h-8 w-8 items-center justify-center rounded-full bg-companion text-white hover:bg-companion/90 transition"
+          >
+            <Send size={14} />
+          </button>
+        </div>
+      </Card>
     </div>
   );
 }
+
+/* ── Overview Tab ── */
+
+function OverviewTab({ onNotify }: { onNotify: (msg: string) => void }) {
+  const objectives = [
+    'Construct bending moment diagrams from shear force data',
+    'Identify maximum moment location using zero-shear principle',
+    'Link moment demand to structural design implications',
+    'Explain shear-to-moment derivation using equilibrium',
+  ];
+
+  const moduleMap = [
+    { week: 'Week 1', title: 'Loads and supports', status: 'complete' },
+    { week: 'Week 2', title: 'Equilibrium review', status: 'complete' },
+    { week: 'Week 3', title: 'Shear force diagrams', status: 'complete' },
+    { week: 'Week 4', title: 'Bending moment diagrams', status: 'current' },
+    { week: 'Week 5', title: 'Design implications', status: 'next' },
+  ];
+
+  return (
+    <div className="grid gap-5 lg:grid-cols-[1fr_340px]">
+      <div className="space-y-5">
+        {/* Module map */}
+        <Card>
+          <p className="font-mono text-xs font-semibold uppercase text-slate-soft">Module map</p>
+          <h3 className="mt-2 font-display text-xl font-bold">Unit structure</h3>
+          <div className="mt-5 space-y-2">
+            {moduleMap.map((mod) => {
+              const isComplete = mod.status === 'complete';
+              const isCurrent = mod.status === 'current';
+              const isNext = mod.status === 'next';
+              const content = (
+                <>
+                  {isComplete && <CheckCircle2 size={18} className="shrink-0 text-success" />}
+                  {isCurrent && <Play size={18} className="shrink-0 text-companion" />}
+                  {isNext && <Lock size={18} className="shrink-0 text-slate-soft" />}
+                  <div className="min-w-0 flex-1">
+                    <p className="font-mono text-xs font-semibold text-slate-soft">{mod.week}</p>
+                    <p className="mt-0.5 font-semibold text-ink">{mod.title}</p>
+                  </div>
+                  {isComplete && (
+                    <span className="rounded-full bg-success-tint px-2.5 py-0.5 font-mono text-[10px] font-bold text-success border border-success/20">
+                      Complete
+                    </span>
+                  )}
+                  {isCurrent && (
+                    <span className="rounded-full bg-companion-tint px-2.5 py-0.5 font-mono text-[10px] font-bold text-companion border border-companion/20">
+                      In progress
+                    </span>
+                  )}
+                </>
+              );
+              if (isNext) {
+                return (
+                  <button
+                    key={mod.week}
+                    type="button"
+                    onClick={() => onNotify(`${mod.week}: ${mod.title} — not yet unlocked. Complete Week 4 to continue.`)}
+                    className={cn(
+                      'flex w-full items-center gap-4 rounded-xl border p-4 text-left transition',
+                      'border-line bg-paper hover:border-slate-soft',
+                    )}
+                  >
+                    {content}
+                  </button>
+                );
+              }
+              return (
+                <Link
+                  key={mod.week}
+                  to="/demo"
+                  className={cn(
+                    'flex items-center gap-4 rounded-xl border p-4 transition',
+                    isComplete && 'border-success/20 bg-success-tint hover:border-success/40',
+                    isCurrent && 'border-companion/25 bg-companion-tint hover:border-companion/50',
+                  )}
+                >
+                  {content}
+                </Link>
+              );
+            })}
+          </div>
+        </Card>
+
+        {/* Learning objectives */}
+        <Card>
+          <p className="font-mono text-xs font-semibold uppercase text-slate-soft">Learning objectives</p>
+          <h3 className="mt-2 font-display text-xl font-bold">Week 4 outcomes</h3>
+          <div className="mt-5 space-y-3">
+            {objectives.map((obj, i) => (
+              <div key={i} className="flex items-start gap-3">
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-companion-tint font-mono text-xs font-bold text-companion">
+                  {i + 1}
+                </span>
+                <p className="text-sm leading-6 text-slate-copy">{obj}</p>
+              </div>
+            ))}
+          </div>
+        </Card>
+      </div>
+
+      <div className="space-y-5">
+        {/* Next action */}
+        <Card className="border-cardinal/20 bg-gradient-to-br from-cardinal-tint to-white">
+          <Badge tone="danger">Due Monday 9 am</Badge>
+          <h3 className="mt-3 font-display text-lg font-bold">Draft design reflection</h3>
+          <p className="mt-2 text-sm leading-6 text-slate-copy">
+            Upload your draft to receive AI formative feedback before final submission Friday 5 pm.
+          </p>
+          <div className="mt-4">
+            <Button to="/demo/assessment" variant="primary">
+              Open assessment <ArrowRight size={15} />
+            </Button>
+          </div>
+        </Card>
+
+        {/* AI availability */}
+        <Card className="border-companion/25 bg-gradient-to-br from-white to-companion-tint/60">
+          <div className="flex items-center gap-2">
+            <Brain size={18} className="text-companion" />
+            <p className="font-display text-base font-bold">AI Tutor available</p>
+          </div>
+          <p className="mt-3 text-sm leading-6 text-slate-copy">
+            The AI Tutor is indexed on Week 4 lecture slides and can help explain bending moment
+            diagrams, check your reasoning, and prepare support questions.
+          </p>
+          <div className="mt-4">
+            <Button to="/demo/learn" variant="ai">
+              <Sparkles size={15} /> Open AI Tutor
+            </Button>
+          </div>
+        </Card>
+
+        {/* Unit info */}
+        <Card>
+          <p className="font-mono text-xs font-semibold uppercase text-slate-soft">Unit info</p>
+          <div className="mt-4 space-y-3">
+            {[
+              ['Unit code', unit.code],
+              ['Lecturer', 'Dr Avery Tan'],
+              ['Term', 'Semester 2, 2026'],
+              ['Campus', 'Bentley · Engineering Building'],
+            ].map(([label, value]) => (
+              <div key={label} className="flex items-center justify-between">
+                <p className="text-xs font-semibold text-slate-soft">{label}</p>
+                <p className="text-sm font-semibold text-ink">{value}</p>
+              </div>
+            ))}
+          </div>
+        </Card>
+      </div>
+    </div>
+  );
+}
+
+/* ── Assessments Tab ── */
 
 function AssessmentsTab() {
+  const assessments = [
+    {
+      code: 'A1',
+      title: 'Shear force analysis',
+      type: 'Report',
+      weight: '15%',
+      due: 'Submitted — Week 3',
+      status: 'submitted',
+    },
+    {
+      code: 'A2',
+      title: 'Draft design reflection',
+      type: 'Reflection',
+      weight: '20%',
+      due: 'Draft due Mon 9 am · Final due Fri 5 pm',
+      status: 'open',
+    },
+    {
+      code: 'A3',
+      title: 'Final structural analysis report',
+      type: 'Report',
+      weight: '40%',
+      due: 'Opens Week 8',
+      status: 'upcoming',
+    },
+    {
+      code: 'Q1-5',
+      title: 'Online quizzes',
+      type: 'Quiz',
+      weight: '15%',
+      due: 'Weekly · Quiz 5 opens Wednesday',
+      status: 'open',
+    },
+    {
+      code: 'EX',
+      title: 'Final examination',
+      type: 'Exam',
+      weight: '10%',
+      due: 'Examination period',
+      status: 'upcoming',
+    },
+  ];
+
   return (
-    <div className="grid gap-5 md:grid-cols-2">
-      <Card>
-        <FileText className="mb-4 text-companion" />
-        <h3 className="font-display text-xl font-bold">Draft design reflection</h3>
-        <p className="mt-2 text-sm text-slate-copy">AI formative feedback is open until Monday 9 am.</p>
-        <div className="mt-5"><Button to="/demo/assessment">Open assessment submission</Button></div>
-      </Card>
-      <Card>
-        <FileText className="mb-4 text-cardinal" />
-        <h3 className="font-display text-xl font-bold">Final structural analysis report</h3>
-        <p className="mt-2 text-sm text-slate-copy">Final submission closes Friday 5 pm. No AI discussion after final upload.</p>
-      </Card>
+    <div className="space-y-5">
+      <div className="grid gap-4">
+        {assessments.map((a) => (
+          <div
+            key={a.code}
+            className={cn(
+              'rounded-2xl border p-5',
+              a.status === 'submitted' && 'border-success/20 bg-success-tint',
+              a.status === 'open' && 'border-line bg-white shadow-sm',
+              a.status === 'upcoming' && 'border-line bg-paper',
+            )}
+          >
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div className="flex items-start gap-4">
+                <div
+                  className={cn(
+                    'flex h-10 w-10 shrink-0 items-center justify-center rounded-xl font-mono text-xs font-bold',
+                    a.status === 'submitted' && 'bg-success-tint text-success',
+                    a.status === 'open' && 'bg-companion-tint text-companion',
+                    a.status === 'upcoming' && 'bg-paper-dim text-slate-soft',
+                  )}
+                >
+                  {a.code}
+                </div>
+                <div>
+                  <p className="font-display text-lg font-bold text-ink">{a.title}</p>
+                  <div className="mt-1 flex flex-wrap items-center gap-2">
+                    <span className="rounded-full border border-line bg-paper px-2 py-0.5 font-mono text-[10px] font-semibold text-slate-copy">
+                      {a.type}
+                    </span>
+                    <span className="rounded-full border border-line bg-paper px-2 py-0.5 font-mono text-[10px] font-semibold text-slate-copy">
+                      {a.weight}
+                    </span>
+                  </div>
+                  <p className="mt-2 text-sm text-slate-copy">{a.due}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                {a.status === 'submitted' && (
+                  <span className="flex items-center gap-1.5 rounded-full bg-success-tint px-3 py-1 font-mono text-xs font-bold text-success border border-success/20">
+                    <CheckCircle2 size={13} /> Submitted
+                  </span>
+                )}
+                {a.status === 'open' && a.code !== 'Q1-5' && (
+                  <Button to="/demo/assessment" variant="primary" size="sm">
+                    Open
+                  </Button>
+                )}
+                {a.status === 'open' && a.code === 'Q1-5' && (
+                  <QuizPlaceholderButton />
+                )}
+                {a.status === 'upcoming' && (
+                  <span className="rounded-full border border-line bg-paper px-3 py-1 font-mono text-xs font-semibold text-slate-soft">
+                    Upcoming
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
+
+function QuizPlaceholderButton() {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="relative">
+      <Button variant="secondary" size="sm" onClick={() => setOpen((v) => !v)}>
+        <Info size={13} /> Quiz info
+      </Button>
+      {open && (
+        <div className="absolute right-0 top-11 z-10 w-72 rounded-2xl border border-line bg-white p-4 shadow-xl">
+          <div className="flex items-start gap-3">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-companion-tint text-companion">
+              <Sparkles size={16} />
+            </div>
+            <div>
+              <p className="font-display text-sm font-bold">Online quiz — coming soon</p>
+              <p className="mt-1 text-xs leading-5 text-slate-copy">
+                Quiz 5 opens Wednesday and will appear here as an interactive question set grounded in
+                the approved unit content.
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setOpen(false)}
+            className="mt-3 text-xs font-semibold text-companion hover:underline"
+          >
+            Got it
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ── Announcements Tab ── */
 
 function AnnouncementsTab() {
+  const announcementDetails = [
+    { text: announcements[0], type: 'Logistics', date: '8 Jul 2026', icon: Info },
+    { text: announcements[1], type: 'Study support', date: '8 Jul 2026', icon: AlertCircle },
+    { text: announcements[2], type: 'Assessment', date: '6 Jul 2026', icon: ClipboardList },
+  ];
+
   return (
-    <div className="grid gap-4">
-      {announcements.map((item) => (
-        <Card key={item} className="flex items-center gap-4">
-          <Megaphone className="text-cardinal" />
-          <p className="font-semibold">{item}</p>
-        </Card>
+    <div className="space-y-4">
+      {announcementDetails.map((item, i) => (
+        <div
+          key={i}
+          className="flex items-start gap-4 rounded-2xl border border-line bg-white p-5 shadow-sm"
+        >
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-cardinal-tint text-cardinal">
+            <Megaphone size={18} />
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="rounded-full border border-line bg-paper px-2 py-0.5 font-mono text-[10px] font-semibold text-slate-copy">
+                {item.type}
+              </span>
+              <span className="font-mono text-[10px] text-slate-soft">{item.date}</span>
+            </div>
+            <p className="mt-2 font-semibold text-ink">{item.text}</p>
+          </div>
+        </div>
       ))}
     </div>
   );
 }
 
-function ResourcesTab() {
+/* ── Resources Tab ── */
+
+function ResourcesTab({ onNotify }: { onNotify: (msg: string) => void }) {
+  const resources = [
+    {
+      title: 'PASS timetable',
+      sub: 'Fri 2:00 pm · Engineering Studio 2.13',
+      icon: Play,
+      tone: 'success' as const,
+      action: 'Download',
+    },
+    {
+      title: 'Week 4 worked examples',
+      sub: 'Bending moment diagrams · PDF · 14 slides',
+      icon: FileText,
+      tone: 'companion' as const,
+      action: 'Open',
+    },
+    {
+      title: 'Discussion board',
+      sub: 'Week 4 thread · 12 student posts',
+      icon: BookOpen,
+      tone: 'companion' as const,
+      action: 'View',
+    },
+    {
+      title: 'Week 3 shear recap',
+      sub: 'Prerequisite · Tutorial question set',
+      icon: FileText,
+      tone: 'slate' as const,
+      action: 'Open',
+    },
+  ];
+
   return (
-    <div className="grid gap-5 md:grid-cols-3">
-      {['PASS timetable', 'Worked examples', 'Discussion board'].map((item, index) => (
-        <Card key={item}>
-          {index === 0 ? <Play className="mb-4 text-success" /> : <BookIcon />}
-          <h3 className="font-display text-xl font-bold">{item}</h3>
-          <p className="mt-3 text-sm leading-6 text-slate-copy">Available inside the unit. The AI can recommend these supports but does not create new official services.</p>
-        </Card>
-      ))}
-      <Link to="/demo/learn" className="font-semibold text-companion">Open full Learning Mode</Link>
+    <div className="space-y-5">
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        {resources.map((res) => (
+          <div
+            key={res.title}
+            className="flex flex-col rounded-2xl border border-line bg-white p-5 shadow-sm"
+          >
+            <div
+              className={cn(
+                'mb-4 flex h-10 w-10 items-center justify-center rounded-xl',
+                res.tone === 'success' && 'bg-success-tint text-success',
+                res.tone === 'companion' && 'bg-companion-tint text-companion',
+                res.tone === 'slate' && 'bg-paper-dim text-slate-copy',
+              )}
+            >
+              <res.icon size={18} />
+            </div>
+            <h3 className="font-display text-lg font-bold text-ink">{res.title}</h3>
+            <p className="mt-2 flex-1 text-sm leading-6 text-slate-copy">{res.sub}</p>
+            <div className="mt-4 flex gap-2">
+              <button
+                type="button"
+                onClick={() => onNotify(`${res.title} — ${res.action} is available from the full LMS resource library.`)}
+                className="flex items-center gap-1.5 rounded-full border border-line px-3 py-1.5 text-xs font-semibold text-ink hover:border-companion hover:text-companion transition"
+              >
+                {res.action === 'Download' ? <Download size={12} /> : <ExternalLink size={12} />}
+                {res.action}
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="rounded-2xl border border-companion/20 bg-companion-tint p-5">
+        <div className="flex items-center gap-2">
+          <Brain size={18} className="text-companion" />
+          <p className="font-display text-base font-bold text-ink">AI Tutor can help you use these resources</p>
+        </div>
+        <p className="mt-2 text-sm leading-6 text-slate-copy">
+          The AI Tutor is indexed on the above materials and can guide you through worked examples, suggest practice questions, and prepare questions for PASS or tutorial sessions.
+        </p>
+        <div className="mt-4">
+          <Button to="/demo/learn" variant="ai" size="sm">
+            <Sparkles size={14} /> Open full AI Tutor workspace
+          </Button>
+        </div>
+      </div>
     </div>
   );
-}
-
-function BookIcon() {
-  return <FileText className="mb-4 text-companion" />;
 }
