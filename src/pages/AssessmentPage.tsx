@@ -73,6 +73,8 @@ export default function AssessmentPage() {
             </div>
           </div>
           <button
+            type="button"
+            aria-label="Simulate draft upload for formative AI feedback"
             onClick={() => uploadDraft('CIVL301_BMD_reflection_draft.pdf')}
             className="mt-6 flex min-h-52 w-full flex-col items-center justify-center rounded-[28px] border-2 border-dashed border-line bg-paper text-center transition hover:border-companion hover:bg-companion-tint"
           >

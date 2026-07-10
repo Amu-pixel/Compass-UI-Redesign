@@ -3,13 +3,14 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { aiResponses, announcements, quickActions, slides, supportPathways, unit, unitTabs } from '../data/mockData';
-import { Button, Card, ChatBubble, ConfidenceBadge, LoadingPill } from '../components/ui';
+import { Button, Card, ChatBubble, ConfidenceBadge, LoadingPill, Tabs } from '../components/ui';
 
 type Message = { role: string; text: string; source?: string };
 
 export default function UnitPage() {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('Unit Materials');
+  const [activeSlideIndex, setActiveSlideIndex] = useState(3);
   const [currentSlide, setCurrentSlide] = useState(18);
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
@@ -45,6 +46,11 @@ export default function UnitPage() {
       setMessages((items) => [...items, { role: 'ai', text: response, source: 'Week 4 Lecture Slides, Slide 18' }]);
       setLoading(false);
     }, 650);
+  }
+
+  function selectLectureWeek(index: number) {
+    setActiveSlideIndex(index);
+    setCurrentSlide(index === 3 ? 18 : index + 1);
   }
 
   function submitQuestion() {
@@ -92,16 +98,8 @@ export default function UnitPage() {
           </div>
           <ConfidenceBadge />
         </div>
-        <div className="mt-5 flex gap-2 overflow-x-auto">
-          {unitTabs.map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`whitespace-nowrap rounded-full px-4 py-2 text-sm font-bold transition ${activeTab === tab ? 'bg-ink text-white' : 'border border-line bg-white text-slate-copy hover:border-companion'}`}
-            >
-              {tab}
-            </button>
-          ))}
+        <div className="mt-5">
+          <Tabs items={unitTabs} active={activeTab} onChange={setActiveTab} label="Unit sections" />
         </div>
       </div>
 
@@ -110,13 +108,16 @@ export default function UnitPage() {
           <Card className="h-fit">
             <p className="mb-4 font-mono text-xs font-semibold uppercase text-slate-soft">Lecture weeks</p>
             <div className="space-y-2">
-              {slides.map((slide) => (
+              {slides.map((slide, index) => (
                 <button
                   key={slide.title}
-                  className={`w-full rounded-2xl border px-3 py-3 text-left text-sm transition ${slide.status === 'Current' ? 'border-cardinal bg-cardinal-tint text-cardinal' : 'border-line hover:bg-paper'}`}
+                  type="button"
+                  aria-pressed={activeSlideIndex === index}
+                  onClick={() => selectLectureWeek(index)}
+                  className={`w-full rounded-2xl border px-3 py-3 text-left text-sm transition ${activeSlideIndex === index ? 'border-cardinal bg-cardinal-tint text-cardinal' : 'border-line hover:bg-paper'}`}
                 >
                   <span className="font-semibold">{slide.title}</span>
-                  <span className="mt-1 block text-xs text-slate-copy">{slide.status}</span>
+                  <span className="mt-1 block text-xs text-slate-copy">{activeSlideIndex === index ? 'Selected' : slide.status}</span>
                 </button>
               ))}
             </div>
@@ -193,7 +194,7 @@ export default function UnitPage() {
             </div>
             <div className="mt-4 flex gap-2 rounded-full border border-line bg-white p-2">
               <input value={question} onChange={(event) => setQuestion(event.target.value)} onKeyDown={(event) => event.key === 'Enter' && submitQuestion()} className="min-w-0 flex-1 px-2 text-sm" placeholder="Ask about this slide" />
-              <button onClick={submitQuestion} className="rounded-full bg-companion p-2 text-white"><Send size={16} /></button>
+              <button type="button" onClick={submitQuestion} aria-label="Send slide question" className="rounded-full bg-companion p-2 text-white"><Send size={16} /></button>
             </div>
           </Card>
         </div>

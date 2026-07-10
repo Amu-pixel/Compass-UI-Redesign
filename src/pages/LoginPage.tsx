@@ -68,6 +68,8 @@ export default function LoginPage() {
                 return (
                   <button
                     key={value as string}
+                    type="button"
+                    aria-pressed={active}
                     onClick={() => setRole(value as Role)}
                     className={`rounded-2xl border p-4 text-left transition ${active ? 'border-companion bg-companion-tint' : 'border-line hover:border-companion'}`}
                   >

@@ -1,5 +1,5 @@
 import { BarChart3, BookOpenCheck, HelpCircle, Inbox, Lightbulb, TrendingUp } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { analytics, connectors, dashboardQuestions, lecturerInbox, misunderstoodTopics, teachingActions } from '../data/mockData';
 import { Button, Card, ConfidenceBadge, Toast } from '../components/ui';
 
@@ -27,6 +27,10 @@ export default function DashboardPage({ initialTab = 'overview' }: { initialTab?
     setTimeout(() => setToast(''), 1800);
   }
 
+  useEffect(() => {
+    setActive(initialTab === 'analytics' ? 'overview' : initialTab);
+  }, [initialTab]);
+
   return (
     <div className="mx-auto max-w-7xl px-5 py-6 sm:px-8">
       {toast && <Toast message={toast} />}
@@ -38,10 +42,13 @@ export default function DashboardPage({ initialTab = 'overview' }: { initialTab?
         <ConfidenceBadge />
       </div>
 
-      <div className="grid gap-3 md:grid-cols-4">
+      <div className="grid gap-3 md:grid-cols-4" role="tablist" aria-label="Lecturer dashboard sections">
         {sections.map(({ id, title, detail, icon: Icon }) => (
           <button
             key={id}
+            type="button"
+            role="tab"
+            aria-selected={active === id}
             onClick={() => setActive(id)}
             className={`rounded-2xl border p-4 text-left transition hover:-translate-y-0.5 ${active === id ? 'border-companion bg-companion-tint shadow-sm' : 'border-line bg-white hover:border-companion/50'}`}
           >
@@ -202,7 +209,7 @@ function QueueSection({
           <div key={item.question} className="rounded-2xl border border-line p-4">
             <p className="font-bold">{item.question}</p>
             {editing === index ? (
-              <textarea value={answer} onChange={(event) => setAnswer(event.target.value)} className="mt-3 min-h-28 w-full rounded-2xl border border-line p-3 text-sm" />
+              <textarea value={answer} onChange={(event) => setAnswer(event.target.value)} aria-label={`Edit answer for question ${index + 1}`} className="mt-3 min-h-28 w-full rounded-2xl border border-line p-3 text-sm" />
             ) : (
               <p className="mt-3 text-sm leading-6 text-slate-copy">{index === 0 ? answer : item.answer}</p>
             )}

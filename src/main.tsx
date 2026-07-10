@@ -51,7 +51,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
           >
             <Route index element={<DashboardPage />} />
             <Route path="assignments" element={<LecturerAssignmentsPage />} />
-            <Route path="review" element={<DashboardPage initialTab="setup" />} />
+            <Route path="review" element={<DashboardPage initialTab="queue" />} />
             <Route path="knowledge" element={<KnowledgeBasePage />} />
             <Route path="trust" element={<TrustPage />} />
           </Route>

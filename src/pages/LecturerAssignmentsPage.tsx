@@ -30,6 +30,8 @@ export default function LecturerAssignmentsPage() {
             {lecturerAssignmentView.finalSubmissions.map((submission) => (
               <button
                 key={submission.file}
+                type="button"
+                aria-pressed={selected.file === submission.file}
                 onClick={() => setSelected(submission)}
                 className={`w-full rounded-2xl border p-4 text-left transition ${selected.file === submission.file ? 'border-companion bg-companion-tint' : 'border-line hover:border-companion'}`}
               >

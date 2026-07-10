@@ -12,6 +12,7 @@ export default function LearningPage() {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [showSupport, setShowSupport] = useState(false);
+  const [selectedStyle, setSelectedStyle] = useState('Text');
 
   useEffect(() => {
     const stored = window.localStorage.getItem('ailc-memory');
@@ -84,11 +85,22 @@ export default function LearningPage() {
           </div>
           <div className="mt-5 flex flex-wrap gap-2">
             {learningStyles.map((style) => (
-              <button key={style} className="rounded-full border border-line bg-white px-4 py-2 text-xs font-semibold hover:border-companion hover:text-companion">
+              <button
+                key={style}
+                type="button"
+                aria-pressed={selectedStyle === style}
+                onClick={() => setSelectedStyle(style)}
+                className={`rounded-full border px-4 py-2 text-xs font-semibold transition ${selectedStyle === style ? 'border-companion bg-companion-tint text-companion' : 'border-line bg-white hover:border-companion hover:text-companion'}`}
+              >
                 {style}
               </button>
             ))}
           </div>
+          <p className="mt-3 text-xs leading-5 text-slate-copy">
+            {selectedStyle === 'Text'
+              ? 'Text mode is active for grounded explanations.'
+              : `${selectedStyle} mode is prepared for the full AI Tutor workspace and will keep the same academic guardrails.`}
+          </p>
         </Card>
 
         <Card className="min-h-[560px]">
@@ -104,7 +116,7 @@ export default function LearningPage() {
               className="min-w-0 flex-1 bg-transparent px-3 text-sm"
               placeholder="Ask about bending moment diagrams"
             />
-            <button onClick={() => sendMessage()} className="rounded-2xl bg-companion px-4 text-white"><Send size={18} /></button>
+            <button type="button" onClick={() => sendMessage()} aria-label="Send learning question" className="rounded-2xl bg-companion px-4 text-white"><Send size={18} /></button>
           </div>
           <p className="mt-3 text-xs leading-5 text-slate-copy">The AI explains underlying concepts and cites sources. It does not write assignment content, complete reports, or provide final answers.</p>
         </Card>

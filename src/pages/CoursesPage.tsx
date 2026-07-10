@@ -1,14 +1,27 @@
 import { BookOpen, CalendarDays, Filter, GraduationCap, LogOut, Search, Sparkles } from 'lucide-react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { courses } from '../data/mockData';
-import { Button, Card, ConfidenceBadge } from '../components/ui';
+import { Button, Card, ConfidenceBadge, EmptyState, Toast } from '../components/ui';
 
 export default function CoursesPage() {
   const { user, logout } = useAuth();
+  const [query, setQuery] = useState('');
+  const [toast, setToast] = useState('');
+  const filteredCourses = courses.filter((course) => {
+    const haystack = `${course.code} ${course.title} ${course.lecturer} ${course.term} ${course.nextAssessment}`.toLowerCase();
+    return haystack.includes(query.trim().toLowerCase());
+  });
+
+  function notify(message: string) {
+    setToast(message);
+    setTimeout(() => setToast(''), 1800);
+  }
 
   return (
     <div className="min-h-screen bg-paper text-ink">
+      {toast && <Toast message={toast} />}
       <aside className="fixed left-0 top-0 hidden h-screen w-72 bg-[#101216] p-5 text-white lg:block">
         <div className="flex items-center gap-3">
           <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-cardinal">
@@ -21,9 +34,15 @@ export default function CoursesPage() {
         </div>
         <nav className="mt-10 space-y-2">
           {['Institution Page', 'Profile', 'Activity Stream', 'Courses', 'Organisations', 'Calendar', 'Messages', 'Grades', 'Tools'].map((item) => (
-            <div key={item} className={`rounded-2xl px-4 py-3 text-sm font-semibold ${item === 'Courses' ? 'bg-white text-ink' : 'text-white/68 hover:bg-white/10'}`}>
+            <button
+              key={item}
+              type="button"
+              aria-current={item === 'Courses' ? 'page' : undefined}
+              onClick={() => notify(item === 'Courses' ? 'You are already viewing Courses.' : `${item} is prepared for the full LMS workspace.`)}
+              className={`w-full rounded-2xl px-4 py-3 text-left text-sm font-semibold transition ${item === 'Courses' ? 'bg-white text-ink' : 'text-white/68 hover:bg-white/10 hover:text-white'}`}
+            >
               {item}
-            </div>
+            </button>
           ))}
         </nav>
         <button onClick={logout} className="absolute bottom-5 left-5 right-5 flex items-center gap-2 rounded-2xl px-4 py-3 text-sm font-semibold text-white/70 hover:bg-white/10">
@@ -48,13 +67,27 @@ export default function CoursesPage() {
             <div className="grid gap-3 md:grid-cols-[1fr_auto_auto]">
               <label className="flex items-center gap-3 rounded-2xl border border-line bg-paper px-4 py-3">
                 <Search size={18} className="text-slate-soft" />
-                <input className="min-w-0 flex-1 bg-transparent text-sm" placeholder="Search your courses" />
+                <input
+                  value={query}
+                  onChange={(event) => setQuery(event.target.value)}
+                  className="min-w-0 flex-1 bg-transparent text-sm outline-none"
+                  placeholder="Search your courses"
+                  aria-label="Search your courses"
+                />
               </label>
-              <button className="flex items-center justify-center gap-2 rounded-2xl border border-line px-4 py-3 text-sm font-bold hover:border-companion">
+              <button
+                type="button"
+                onClick={() => notify('Current courses filter is already applied.')}
+                className="flex items-center justify-center gap-2 rounded-2xl border border-line px-4 py-3 text-sm font-bold hover:border-companion"
+              >
                 <Filter size={17} />
                 Current courses
               </button>
-              <button className="flex items-center justify-center gap-2 rounded-2xl border border-line px-4 py-3 text-sm font-bold hover:border-companion">
+              <button
+                type="button"
+                onClick={() => notify('Semester selection is prepared for the full LMS catalogue.')}
+                className="flex items-center justify-center gap-2 rounded-2xl border border-line px-4 py-3 text-sm font-bold hover:border-companion"
+              >
                 <CalendarDays size={17} />
                 Semester 2, 2026
               </button>
@@ -63,11 +96,19 @@ export default function CoursesPage() {
 
           <div className="mb-4 flex items-center justify-between">
             <h2 className="font-display text-2xl font-bold">Semester 2, 2026</h2>
-            <p className="font-mono text-xs font-semibold uppercase text-slate-soft">4 courses</p>
+            <p className="font-mono text-xs font-semibold uppercase text-slate-soft">{filteredCourses.length} courses</p>
           </div>
 
-          <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-            {courses.map((course) => (
+          {filteredCourses.length === 0 ? (
+            <EmptyState
+              icon={Search}
+              title="No matching courses"
+              text="Try another course name, code, lecturer, or assessment keyword."
+              action={<Button variant="secondary" onClick={() => setQuery('')}>Clear search</Button>}
+            />
+          ) : (
+            <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+              {filteredCourses.map((course) => (
               <Link key={course.code} to="/demo" className="group rounded-[28px] focus:outline-2">
                 <Card className="h-full overflow-hidden p-0 transition group-hover:-translate-y-1 group-hover:border-companion/40">
                   <div className="relative h-32" style={{ background: course.image }}>
@@ -96,8 +137,9 @@ export default function CoursesPage() {
                   </div>
                 </Card>
               </Link>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
 
           <div className="mt-8">
             <Button to="/demo">Continue Structural Analysis 301</Button>

@@ -1,10 +1,19 @@
 import { CheckCircle2, Database, GraduationCap, HelpCircle, Layers, TrendingUp } from 'lucide-react';
+import { useState } from 'react';
 import { knowledgeTimeline, lecturerInbox } from '../data/mockData';
-import { Button, Card, ConfidenceBadge } from '../components/ui';
+import { Button, Card, ConfidenceBadge, Toast } from '../components/ui';
 
 export default function KnowledgeBasePage() {
+  const [toast, setToast] = useState('');
+
+  function notify(message: string) {
+    setToast(message);
+    setTimeout(() => setToast(''), 1800);
+  }
+
   return (
     <div className="mx-auto max-w-7xl px-5 py-6 sm:px-8">
+      {toast && <Toast message={toast} />}
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="font-mono text-xs font-semibold uppercase text-companion">Knowledge Base / AI Evolution</p>
@@ -53,9 +62,9 @@ export default function KnowledgeBasePage() {
                 <p className="mt-3 text-sm leading-6 text-slate-copy">{item.answer}</p>
                 <p className="mt-3 font-mono text-xs font-bold text-companion">Suggested source: {item.source}</p>
                 <div className="mt-4 flex flex-wrap gap-2">
-                  <Button variant="secondary">Approve</Button>
-                  <Button variant="secondary">Edit</Button>
-                  <Button variant="ghost">Reject</Button>
+                  <Button variant="secondary" onClick={() => notify('Knowledge base approval is prepared for lecturer validation.')}>Approve</Button>
+                  <Button variant="secondary" onClick={() => notify('Inline editing is prepared for the knowledge workflow.')}>Edit</Button>
+                  <Button variant="ghost" onClick={() => notify('Rejection workflow is prepared for lecturer validation.')}>Reject</Button>
                 </div>
               </div>
             ))}
