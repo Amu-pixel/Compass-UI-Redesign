@@ -1,0 +1,16 @@
+# Dependencies and package-manager stores
+node_modules/
+.pnpm-store/
+
+# Build output
+dist/
+
+# Local TypeScript build info
+*.tsbuildinfo
+_tmp_*
+dev-server*.log
+
+# OS and editor artifacts
+desktop.ini
+.DS_Store
+Thumbs.db
