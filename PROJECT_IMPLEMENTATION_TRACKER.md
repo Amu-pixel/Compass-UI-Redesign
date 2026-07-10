@@ -11,7 +11,7 @@
 | Phase 1: Design System | Complete | Premium tokens, primitives, motion utilities, and design-system documentation added. |
 | Phase 2: Navigation And Interaction Fixes | Complete | Broken review navigation fixed; silent controls now work or show polished placeholder feedback. |
 | Phase 3: Homepage | Complete | Premium AI LMS product entry redesigned with role access, learning workflow, AI Tutor framing, trust cues, and polished placeholder feedback. |
-| Phase 4: Dashboard | Pending approval | Not started. |
+| Phase 4: Dashboard | Complete | Student and lecturer dashboards redesigned around next actions, course progress, AI Tutor entry, assignments, review queue, cohort signals, and teaching operations. |
 | Phase 5: AI Tutor Workspace | Pending approval | Not started. |
 | Phase 6: Course Pages | Pending approval | Not started. |
 | Phase 7: Assignments And Quizzes | Pending approval | Not started. |
@@ -57,3 +57,10 @@
 - Student and lecturer role selection, prefilled demo credentials, authentication call, and route targets are unchanged.
 - Homepage controls either navigate to visible sections, submit the existing login flow, select a role, or show polished live placeholder feedback.
 - AI Tutor, source grounding, integrity, privacy, and institutional trust cues are introduced without changing application business logic.
+
+## Phase 4 Dashboard Notes
+
+- Student dashboard now emphasizes next learning action, enrolled courses, progress, upcoming assignment work, resources, and AI Tutor entry.
+- Lecturer dashboard now emphasizes review queue, cohort progress, teaching signals, AI-supported recommendations, and knowledge-base maturity.
+- Shared logged-in navigation branding now uses the Compass AI LMS identity while preserving all existing route targets and role-specific navigation.
+- Mock data, deterministic demo responses, authentication, role guards, localStorage behavior, and existing student/lecturer flows are unchanged.

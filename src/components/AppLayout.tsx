@@ -1,4 +1,4 @@
-import { BarChart3, BookOpen, Brain, ClipboardCheck, Database, Home, LogOut, ShieldCheck } from 'lucide-react';
+import { BarChart3, BookOpen, Brain, ClipboardCheck, Database, Home, LogOut, ShieldCheck, Sparkles } from 'lucide-react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { unit } from '../data/mockData';
@@ -33,14 +33,14 @@ export default function AppLayout() {
 
   return (
     <div className="min-h-screen bg-paper text-ink">
-      <aside className="fixed left-0 top-0 z-30 hidden h-screen w-72 bg-[#101216] px-4 py-5 text-white lg:block">
+      <aside className="fixed left-0 top-0 z-30 hidden h-screen w-72 border-r border-white/10 bg-[#0B0D12] px-4 py-5 text-white lg:block">
         <div className="mb-8 flex items-center gap-3 px-2">
-          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-cardinal text-white">
-            <BookOpen size={21} />
+          <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-ai-cyan/30 bg-ai-cyan/10 text-ai-cyan shadow-[0_0_26px_rgba(109,231,242,0.12)]">
+            <Sparkles size={21} />
           </div>
           <div>
-            <p className="font-display text-sm font-bold">bentley.lms</p>
-            <p className="text-xs text-white/55">{isLecturer ? 'Lecturer workspace' : 'Student Blackboard'}</p>
+            <p className="font-display text-sm font-bold">Compass AI LMS</p>
+            <p className="text-xs text-white/55">{isLecturer ? 'Lecturer workspace' : 'Student workspace'}</p>
           </div>
         </div>
         <nav className="space-y-1">
@@ -73,7 +73,7 @@ export default function AppLayout() {
             <p className="font-mono text-xs font-semibold uppercase tracking-wider text-slate-soft">
               {isLecturer ? 'Lecturer / AI validation / Cohort insight' : `Courses / ${unit.name} / ${unit.week}`}
             </p>
-            <h1 className="font-display text-xl font-bold sm:text-2xl">{isLecturer ? `Hi ${user?.name || 'Lecturer'}, lecturer workspace` : unit.name}</h1>
+            <h1 className="font-display text-xl font-bold sm:text-2xl">{isLecturer ? `Hi ${user?.name || 'Lecturer'}, teaching workspace` : unit.name}</h1>
           </div>
           <div className="hidden rounded-full border border-line bg-paper px-4 py-2 text-sm font-semibold text-slate-copy sm:block">
             {isLecturer ? 'Lecturer only' : unit.code}

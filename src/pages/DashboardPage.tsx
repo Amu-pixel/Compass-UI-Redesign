@@ -1,7 +1,7 @@
-import { BarChart3, BookOpenCheck, HelpCircle, Inbox, Lightbulb, TrendingUp } from 'lucide-react';
+import { BarChart3, BookOpenCheck, HelpCircle, Inbox, Lightbulb, TrendingUp, Users } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { analytics, connectors, dashboardQuestions, lecturerInbox, misunderstoodTopics, teachingActions } from '../data/mockData';
-import { Button, Card, ConfidenceBadge, Toast } from '../components/ui';
+import { Badge, Button, Card, ConfidenceBadge, Toast } from '../components/ui';
 
 type DashboardSection = 'overview' | 'statistics' | 'topics' | 'questions' | 'recommendations' | 'report' | 'setup' | 'queue';
 
@@ -32,42 +32,71 @@ export default function DashboardPage({ initialTab = 'overview' }: { initialTab?
   }, [initialTab]);
 
   return (
-    <div className="mx-auto max-w-7xl px-5 py-6 sm:px-8">
+    <div className="min-h-[calc(100vh-88px)] bg-night px-5 py-6 text-mist sm:px-8">
       {toast && <Toast message={toast} />}
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <p className="font-mono text-xs font-semibold uppercase text-companion">Lecturer Dashboard</p>
-          <h2 className="font-display text-3xl font-bold">Simple cohort insight, one section at a time</h2>
+      <div className="mx-auto max-w-7xl">
+        <div className="mb-6 grid gap-5 lg:grid-cols-[1fr_auto]">
+          <div>
+            <p className="font-mono text-xs font-semibold uppercase tracking-[0.16em] text-ai-cyan">Lecturer dashboard</p>
+            <h2 className="mt-2 font-display text-4xl font-bold text-mist">Teaching command center</h2>
+            <p className="mt-3 max-w-3xl text-sm leading-7 text-mist-muted">
+              A focused view of review work, cohort progress, assignment signals, and AI-supported teaching actions for CIVL301.
+            </p>
+          </div>
+          <div className="flex flex-wrap items-start gap-2 lg:justify-end">
+            <ConfidenceBadge />
+            <Badge tone="ai">Privacy-aware cohort signals</Badge>
+          </div>
         </div>
-        <ConfidenceBadge />
-      </div>
 
-      <div className="grid gap-3 md:grid-cols-4" role="tablist" aria-label="Lecturer dashboard sections">
-        {sections.map(({ id, title, detail, icon: Icon }) => (
-          <button
-            key={id}
-            type="button"
-            role="tab"
-            aria-selected={active === id}
-            onClick={() => setActive(id)}
-            className={`rounded-2xl border p-4 text-left transition hover:-translate-y-0.5 ${active === id ? 'border-companion bg-companion-tint shadow-sm' : 'border-line bg-white hover:border-companion/50'}`}
-          >
-            <Icon className="mb-4 text-companion" size={21} />
-            <p className="font-display text-base font-bold">{title}</p>
-            <p className="mt-1 text-xs leading-5 text-slate-copy">{detail}</p>
-          </button>
-        ))}
-      </div>
+        <div className="mb-6 grid gap-4 md:grid-cols-3">
+          {[
+            ['Review queue', '17 items need lecturer judgement', Inbox],
+            ['Cohort progress', '71% average quiz accuracy', Users],
+            ['AI insight', 'Bending moment diagrams remain the priority', Lightbulb],
+          ].map(([title, detail, Icon]) => {
+            const TypedIcon = Icon as typeof Inbox;
+            return (
+              <div key={title as string} className="rounded-[24px] border border-white/10 bg-white/[0.045] p-5">
+                <TypedIcon className="text-ai-cyan" size={21} />
+                <p className="mt-4 font-display text-lg font-bold text-mist">{title as string}</p>
+                <p className="mt-2 text-sm leading-6 text-mist-muted">{detail as string}</p>
+              </div>
+            );
+          })}
+        </div>
 
-      <div className="mt-6">
-        {active === 'overview' && <OverviewSection />}
-        {active === 'statistics' && <StatisticsSection />}
-        {active === 'topics' && <TopicsSection />}
-        {active === 'questions' && <QuestionsSection />}
-        {active === 'recommendations' && <RecommendationsSection notify={notify} />}
-        {active === 'report' && <ReportSection />}
-        {active === 'setup' && <SetupSection />}
-        {active === 'queue' && <QueueSection editing={editing} setEditing={setEditing} answer={answer} setAnswer={setAnswer} notify={notify} />}
+        <div className="grid gap-3 md:grid-cols-4" role="tablist" aria-label="Lecturer dashboard sections">
+          {sections.map(({ id, title, detail, icon: Icon }) => (
+            <button
+              key={id}
+              type="button"
+              role="tab"
+              aria-selected={active === id}
+              onClick={() => setActive(id)}
+              className={`premium-focus rounded-2xl border p-4 text-left outline-none focus-visible:ring-2 focus-visible:ring-ai-cyan/70 ${
+                active === id
+                  ? 'border-ai-cyan/45 bg-ai-cyan/10 shadow-[0_0_30px_rgba(109,231,242,0.10)]'
+                  : 'border-white/10 bg-white/[0.04] hover:border-white/24 hover:bg-white/[0.065]'
+              }`}
+            >
+              <Icon className={active === id ? 'mb-4 text-ai-cyan' : 'mb-4 text-mist-soft'} size={21} />
+              <p className="font-display text-base font-bold text-mist">{title}</p>
+              <p className="mt-1 text-xs leading-5 text-mist-muted">{detail}</p>
+            </button>
+          ))}
+        </div>
+
+        <div className="mt-6">
+          {active === 'overview' && <OverviewSection />}
+          {active === 'statistics' && <StatisticsSection />}
+          {active === 'topics' && <TopicsSection />}
+          {active === 'questions' && <QuestionsSection />}
+          {active === 'recommendations' && <RecommendationsSection notify={notify} />}
+          {active === 'report' && <ReportSection />}
+          {active === 'setup' && <SetupSection />}
+          {active === 'queue' && <QueueSection editing={editing} setEditing={setEditing} answer={answer} setAnswer={setAnswer} notify={notify} />}
+        </div>
       </div>
     </div>
   );
@@ -75,17 +104,17 @@ export default function DashboardPage({ initialTab = 'overview' }: { initialTab?
 
 function OverviewSection() {
   return (
-    <Card>
-      <h3 className="font-display text-xl font-bold">This week at a glance</h3>
+    <Card variant="dark">
+      <h3 className="font-display text-xl font-bold text-mist">This week at a glance</h3>
       <div className="mt-5 grid gap-4 md:grid-cols-3">
         {[
           ['Main teaching issue', 'Bending moment diagrams remain the clearest pain point.'],
           ['Suggested next step', 'Release one worked example and a short quiz before tutorial.'],
           ['Student support', '36 students were referred to PASS, mentoring, or lecturer catch-up.'],
         ].map(([title, detail]) => (
-          <div key={title} className="rounded-2xl bg-paper p-4">
-            <p className="font-bold">{title}</p>
-            <p className="mt-2 text-sm leading-6 text-slate-copy">{detail}</p>
+          <div key={title} className="rounded-2xl border border-white/10 bg-white/[0.045] p-4">
+            <p className="font-bold text-mist">{title}</p>
+            <p className="mt-2 text-sm leading-6 text-mist-muted">{detail}</p>
           </div>
         ))}
       </div>
@@ -95,14 +124,14 @@ function OverviewSection() {
 
 function StatisticsSection() {
   return (
-    <Card>
-      <h3 className="font-display text-xl font-bold">Statistics</h3>
+    <Card variant="dark">
+      <h3 className="font-display text-xl font-bold text-mist">Statistics</h3>
       <div className="mt-5 grid gap-4 md:grid-cols-4">
         {analytics.map((item) => (
-          <div key={item.label} className="rounded-2xl bg-paper p-4">
-            <p className="font-mono text-xs font-semibold uppercase text-slate-soft">{item.label}</p>
-            <p className="mt-3 font-display text-4xl font-bold">{item.value}</p>
-            <p className="mt-2 text-sm text-slate-copy">{item.detail}</p>
+          <div key={item.label} className="rounded-2xl border border-white/10 bg-white/[0.045] p-4">
+            <p className="font-mono text-xs font-semibold uppercase text-mist-soft">{item.label}</p>
+            <p className="mt-3 font-display text-4xl font-bold text-mist">{item.value}</p>
+            <p className="mt-2 text-sm text-mist-muted">{item.detail}</p>
           </div>
         ))}
       </div>
@@ -112,10 +141,10 @@ function StatisticsSection() {
 
 function TopicsSection() {
   return (
-    <Card>
-      <h3 className="font-display text-xl font-bold">Most misunderstood topics</h3>
+    <Card variant="dark">
+      <h3 className="font-display text-xl font-bold text-mist">Most misunderstood topics</h3>
       <div className="mt-5 grid gap-3 md:grid-cols-2">
-        {misunderstoodTopics.map((topic) => <p key={topic} className="rounded-2xl bg-paper p-4 text-sm font-semibold">{topic}</p>)}
+        {misunderstoodTopics.map((topic) => <p key={topic} className="rounded-2xl border border-white/10 bg-white/[0.045] p-4 text-sm font-semibold text-mist-muted">{topic}</p>)}
       </div>
     </Card>
   );
@@ -123,10 +152,10 @@ function TopicsSection() {
 
 function QuestionsSection() {
   return (
-    <Card>
-      <h3 className="font-display text-xl font-bold">Frequently asked questions</h3>
+    <Card variant="dark">
+      <h3 className="font-display text-xl font-bold text-mist">Frequently asked questions</h3>
       <div className="mt-5 space-y-3">
-        {dashboardQuestions.map((question) => <p key={question} className="rounded-2xl bg-companion-tint p-4 text-sm font-semibold text-companion">{question}</p>)}
+        {dashboardQuestions.map((question) => <p key={question} className="rounded-2xl border border-ai-cyan/20 bg-ai-cyan/10 p-4 text-sm font-semibold text-mist">{question}</p>)}
       </div>
     </Card>
   );
@@ -134,12 +163,12 @@ function QuestionsSection() {
 
 function RecommendationsSection({ notify }: { notify: (message: string) => void }) {
   return (
-    <Card>
-      <h3 className="font-display text-xl font-bold">Teaching recommendations</h3>
-      <p className="mt-2 text-sm leading-6 text-slate-copy">Choose one action to respond to the current cohort pattern.</p>
+    <Card variant="dark">
+      <h3 className="font-display text-xl font-bold text-mist">Teaching recommendations</h3>
+      <p className="mt-2 text-sm leading-6 text-mist-muted">Choose one action to respond to the current cohort pattern.</p>
       <div className="mt-5 grid gap-3 md:grid-cols-3">
         {teachingActions.map((action) => (
-          <Button key={action} variant="secondary" onClick={() => notify(`${action} queued for CIVL301`)}>
+          <Button key={action} variant="ai" onClick={() => notify(`${action} queued for CIVL301`)}>
             {action}
           </Button>
         ))}
@@ -150,11 +179,11 @@ function RecommendationsSection({ notify }: { notify: (message: string) => void 
 
 function ReportSection() {
   return (
-    <Card>
-      <h3 className="font-display text-xl font-bold">Weekly report</h3>
+    <Card variant="dark">
+      <h3 className="font-display text-xl font-bold text-mist">Weekly report</h3>
       <div className="mt-5 grid gap-4 md:grid-cols-4">
         {['42% asked follow-ups about bending moment diagrams', '17 questions escalated to lecturer', '6 rubric weaknesses clustered around justification', '4 knowledge base updates approved'].map((item) => (
-          <div key={item} className="rounded-2xl bg-paper p-4 text-sm font-semibold leading-6">{item}</div>
+          <div key={item} className="rounded-2xl border border-white/10 bg-white/[0.045] p-4 text-sm font-semibold leading-6 text-mist-muted">{item}</div>
         ))}
       </div>
     </Card>
@@ -164,23 +193,23 @@ function ReportSection() {
 function SetupSection() {
   return (
     <div className="grid gap-5 lg:grid-cols-[0.9fr_1.1fr]">
-      <Card>
-        <h3 className="font-display text-xl font-bold">Connected unit materials</h3>
+      <Card variant="dark">
+        <h3 className="font-display text-xl font-bold text-mist">Connected unit materials</h3>
         <div className="mt-4 space-y-3">
           {connectors.map(([name, status]) => (
-            <div key={name} className="flex items-center justify-between rounded-2xl bg-paper p-3 text-sm">
-              <span className="font-semibold">{name}</span>
-              <span className={`font-mono text-xs font-bold ${status === 'Connected' ? 'text-success' : 'text-warn'}`}>{status}</span>
+            <div key={name} className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/[0.045] p-3 text-sm">
+              <span className="font-semibold text-mist-muted">{name}</span>
+              <span className={`font-mono text-xs font-bold ${status === 'Connected' ? 'text-[#79E2A0]' : 'text-[#F2B56B]'}`}>{status}</span>
             </div>
           ))}
         </div>
       </Card>
-      <Card>
-        <h3 className="font-display text-xl font-bold">Knowledge Base Maturity</h3>
+      <Card variant="dark">
+        <h3 className="font-display text-xl font-bold text-mist">Knowledge Base Maturity</h3>
         <div className="mt-6">
-          <div className="flex justify-between text-sm font-bold"><span>Current maturity</span><span>62%</span></div>
-          <div className="mt-2 h-3 rounded-full bg-paper-dim"><div className="h-3 w-[62%] rounded-full bg-companion" /></div>
-          <p className="mt-3 font-mono text-xs text-slate-copy">28% {'->'} 47% {'->'} 62% across three semesters</p>
+          <div className="flex justify-between text-sm font-bold text-mist"><span>Current maturity</span><span>62%</span></div>
+          <div className="mt-2 h-3 rounded-full bg-white/10"><div className="h-3 w-[62%] rounded-full bg-gradient-to-r from-ai-cyan to-ai-violet" /></div>
+          <p className="mt-3 font-mono text-xs text-mist-muted">28% {'->'} 47% {'->'} 62% across three semesters</p>
         </div>
       </Card>
     </div>
@@ -201,21 +230,21 @@ function QueueSection({
   notify: (message: string) => void;
 }) {
   return (
-    <Card>
-      <h3 className="font-display text-xl font-bold">Lecturer review queue</h3>
-      <p className="mt-2 text-sm text-slate-copy">Approved answers become part of the lecturer-approved knowledge base.</p>
+    <Card variant="dark">
+      <h3 className="font-display text-xl font-bold text-mist">Lecturer review queue</h3>
+      <p className="mt-2 text-sm text-mist-muted">Approved answers become part of the lecturer-approved knowledge base.</p>
       <div className="mt-5 space-y-4">
         {lecturerInbox.map((item, index) => (
-          <div key={item.question} className="rounded-2xl border border-line p-4">
-            <p className="font-bold">{item.question}</p>
+          <div key={item.question} className="rounded-2xl border border-white/10 bg-white/[0.045] p-4">
+            <p className="font-bold text-mist">{item.question}</p>
             {editing === index ? (
-              <textarea value={answer} onChange={(event) => setAnswer(event.target.value)} aria-label={`Edit answer for question ${index + 1}`} className="mt-3 min-h-28 w-full rounded-2xl border border-line p-3 text-sm" />
+              <textarea value={answer} onChange={(event) => setAnswer(event.target.value)} aria-label={`Edit answer for question ${index + 1}`} className="mt-3 min-h-28 w-full rounded-2xl border border-white/10 bg-night-panel p-3 text-sm text-mist outline-none focus:border-ai-cyan/55 focus:ring-2 focus:ring-ai-cyan/20" />
             ) : (
-              <p className="mt-3 text-sm leading-6 text-slate-copy">{index === 0 ? answer : item.answer}</p>
+              <p className="mt-3 text-sm leading-6 text-mist-muted">{index === 0 ? answer : item.answer}</p>
             )}
-            <p className="mt-3 font-mono text-xs font-bold text-companion">Source: {item.source}</p>
+            <p className="mt-3 font-mono text-xs font-bold text-ai-cyan">Source: {item.source}</p>
             <div className="mt-4 flex flex-wrap gap-2">
-              <Button variant="secondary" onClick={() => notify('Answer approved and added to knowledge base')}>Approve</Button>
+              <Button variant="ai" onClick={() => notify('Answer approved and added to knowledge base')}>Approve</Button>
               <Button variant="secondary" onClick={() => setEditing(index)}>Edit answer</Button>
               <Button variant="ghost" onClick={() => notify('Suggested answer rejected')}>Reject</Button>
             </div>
