@@ -27,7 +27,7 @@ export const courses = [
     term: 'Semester 2, 2026',
     progress: 68,
     nextAssessment: 'Draft design reflection due Monday',
-    image: 'linear-gradient(135deg, #15161A, #9E1B32)',
+    image: 'radial-gradient(circle at 84% 18%, rgba(245,196,0,.22), transparent 30%), linear-gradient(135deg, #111111, #232323)',
   },
   {
     code: 'CIVL204',
@@ -36,7 +36,7 @@ export const courses = [
     term: 'Semester 2, 2026',
     progress: 54,
     nextAssessment: 'Lab report checkpoint Friday',
-    image: 'linear-gradient(135deg, #263238, #3454D1)',
+    image: 'radial-gradient(circle at 84% 18%, rgba(245,196,0,.18), transparent 30%), linear-gradient(135deg, #1B1B1B, #2C2C2C)',
   },
   {
     code: 'MATH221',
@@ -45,7 +45,7 @@ export const courses = [
     term: 'Semester 2, 2026',
     progress: 73,
     nextAssessment: 'Quiz 5 opens Wednesday',
-    image: 'linear-gradient(135deg, #1F2937, #7C3AED)',
+    image: 'radial-gradient(circle at 84% 18%, rgba(245,196,0,.16), transparent 30%), linear-gradient(135deg, #111111, #3A3A3A)',
   },
   {
     code: 'CIVL310',
@@ -54,7 +54,7 @@ export const courses = [
     term: 'Semester 2, 2026',
     progress: 41,
     nextAssessment: 'Intersection analysis tutorial',
-    image: 'linear-gradient(135deg, #334155, #157F3C)',
+    image: 'radial-gradient(circle at 84% 18%, rgba(245,196,0,.14), transparent 30%), linear-gradient(135deg, #1B1B1B, #232323)',
   },
 ];
 
@@ -217,10 +217,10 @@ export const finalRubric = [
 ];
 
 export const analytics = [
-  { label: 'Asked about BMDs', value: '42%', detail: 'follow-up questions in Week 4', tone: 'blue' },
+  { label: 'Asked about BMDs', value: '42%', detail: 'follow-up questions in Week 4', tone: 'ai' },
   { label: 'Confidence trend', value: '+18%', detail: 'after worked example release', tone: 'green' },
   { label: 'Quiz accuracy', value: '71%', detail: 'moment maxima questions', tone: 'amber' },
-  { label: 'Support referrals', value: '36', detail: 'PASS and tutorials this week', tone: 'purple' },
+  { label: 'Support referrals', value: '36', detail: 'PASS and tutorials this week', tone: 'neutral' },
 ];
 
 export const misunderstoodTopics = [

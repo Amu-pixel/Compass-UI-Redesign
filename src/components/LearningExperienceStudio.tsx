@@ -83,7 +83,7 @@ const methodSignals: Record<LearningMethod, { role: string; outcome: string; acc
   video: { role: 'Video lesson', outcome: 'Use chapters, captions, bookmarks, and saved notes.', accent: 'bg-companion-tint text-companion border-companion/20' },
   podcast: { role: 'Audio field note', outcome: 'Listen with chapters, transcript, and saved bookmarks.', accent: 'bg-companion-tint text-companion border-companion/20' },
   comic: { role: 'Storyboard case', outcome: 'Follow a realistic engineering conversation.', accent: 'bg-[#f7e8dc] text-cardinal border-cardinal/20' },
-  analogy: { role: 'Comparison model', outcome: 'Use and test a metaphor against formal mechanics.', accent: 'bg-[#e7e0f7] text-ai-violet border-ai-violet/20' },
+  analogy: { role: 'Comparison model', outcome: 'Use and test a metaphor against formal mechanics.', accent: 'bg-companion-tint text-ink border-companion/30' },
   practice: { role: 'Quiz workspace', outcome: 'Commit, reveal, explain, and build confidence.', accent: 'bg-companion-tint text-companion border-companion/20' },
   flashcards: { role: 'Retrieval practice', outcome: 'Recall first, then reveal the approved explanation.', accent: 'bg-cardinal-tint text-cardinal border-cardinal/20' },
   revision: { role: 'Revision planner', outcome: 'Choose a focused study block and track what you complete.', accent: 'bg-success-tint text-success border-success/20' },
@@ -131,9 +131,10 @@ function formatTime(value: number) {
 
 function drawLessonFrame(context: CanvasRenderingContext2D, progress: number) {
   const { width, height } = context.canvas;
-  // 8 chapters, each gets 1/8 of the total progress
-  const chapter = Math.min(7, Math.floor(progress * 8));
-  const chapterProgress = Math.min(1, (progress * 8) % 1);
+  // 8 chapters, each gets 1/8 of the total progress.
+  const safeProgress = Number.isFinite(progress) ? Math.max(0, Math.min(0.999, progress)) : 0;
+  const chapter = Math.max(0, Math.min(7, Math.floor(safeProgress * 8)));
+  const chapterProgress = Math.min(1, (safeProgress * 8) % 1);
 
   const titles = [
     'Beam and supports',
@@ -159,26 +160,26 @@ function drawLessonFrame(context: CanvasRenderingContext2D, progress: number) {
   // Background
   const background = context.createLinearGradient(0, 0, width, height);
   background.addColorStop(0, '#0f1117');
-  background.addColorStop(1, '#18243a');
+  background.addColorStop(1, '#1B1B1B');
   context.fillStyle = background;
   context.fillRect(0, 0, width, height);
 
   // Subtle ambient glow
-  context.fillStyle = 'rgba(109,231,242,0.07)';
+  context.fillStyle = 'rgba(245,196,0,0.08)';
   context.beginPath();
   context.arc(width * 0.8, height * 0.15, 120, 0, Math.PI * 2);
   context.fill();
 
   // Header
-  context.fillStyle = '#6de7f2';
+  context.fillStyle = '#F5C400';
   context.font = '600 16px Arial';
   context.fillText('CIVL301  /  WEEK 4', 50, 40);
   context.fillStyle = '#f7f4ee';
   context.font = '700 32px Arial';
-  context.fillText(titles[chapter], 50, 78);
+  context.fillText(titles[chapter] ?? titles[0], 50, 78);
   context.fillStyle = '#c7c0b6';
   context.font = '18px Arial';
-  context.fillText(descriptions[chapter], 50, 108);
+  context.fillText(descriptions[chapter] ?? descriptions[0], 50, 108);
 
   const left = 100;
   const right = width - 100;
@@ -197,7 +198,7 @@ function drawLessonFrame(context: CanvasRenderingContext2D, progress: number) {
   context.lineTo(right, beamY);
   context.stroke();
   // Pin support (triangle left)
-  context.fillStyle = '#6de7f2';
+  context.fillStyle = '#F5C400';
   context.beginPath();
   context.moveTo(left - 16, beamY + 28);
   context.lineTo(left + 16, beamY + 28);
@@ -224,20 +225,20 @@ function drawLessonFrame(context: CanvasRenderingContext2D, progress: number) {
     context.globalAlpha = loadAlpha;
     const loadX = mid;
     context.lineWidth = 5;
-    context.strokeStyle = '#f0abfc';
+    context.strokeStyle = '#FFF5C2';
     context.beginPath();
     context.moveTo(loadX, beamY - 80);
     context.lineTo(loadX, beamY - 12);
     context.stroke();
     // Arrow head
-    context.fillStyle = '#f0abfc';
+    context.fillStyle = '#FFF5C2';
     context.beginPath();
     context.moveTo(loadX - 10, beamY - 26);
     context.lineTo(loadX + 10, beamY - 26);
     context.lineTo(loadX, beamY - 8);
     context.fill();
     // Label
-    context.fillStyle = '#f0abfc';
+    context.fillStyle = '#FFF5C2';
     context.font = '600 16px Arial';
     context.fillText('12 kN', loadX + 14, beamY - 50);
     context.globalAlpha = 1;
@@ -248,13 +249,13 @@ function drawLessonFrame(context: CanvasRenderingContext2D, progress: number) {
     const reactAlpha = chapter === 2 ? chapterProgress : 1;
     context.globalAlpha = reactAlpha;
     // RA upward
-    context.strokeStyle = '#34d399';
+    context.strokeStyle = '#4F7A5A';
     context.lineWidth = 4;
     context.beginPath();
     context.moveTo(left, beamY + 54);
     context.lineTo(left, beamY + 30);
     context.stroke();
-    context.fillStyle = '#34d399';
+    context.fillStyle = '#4F7A5A';
     context.beginPath();
     context.moveTo(left - 7, beamY + 38);
     context.lineTo(left + 7, beamY + 38);
@@ -263,12 +264,12 @@ function drawLessonFrame(context: CanvasRenderingContext2D, progress: number) {
     context.font = '600 14px Arial';
     context.fillText('RA = 6 kN', left - 30, beamY + 70);
     // RB upward
-    context.strokeStyle = '#34d399';
+    context.strokeStyle = '#4F7A5A';
     context.beginPath();
     context.moveTo(right, beamY + 54);
     context.lineTo(right, beamY + 30);
     context.stroke();
-    context.fillStyle = '#34d399';
+    context.fillStyle = '#4F7A5A';
     context.beginPath();
     context.moveTo(right - 7, beamY + 38);
     context.lineTo(right + 7, beamY + 38);
@@ -283,20 +284,20 @@ function drawLessonFrame(context: CanvasRenderingContext2D, progress: number) {
     const shearAlpha = chapter <= 4 ? Math.min(1, chapter === 3 ? chapterProgress : 1) : 0.85;
     context.globalAlpha = shearAlpha;
     // Baseline
-    context.strokeStyle = '#475569';
+    context.strokeStyle = '#CFC9BC';
     context.lineWidth = 1;
     context.beginPath();
     context.moveTo(left, shearBase);
     context.lineTo(right, shearBase);
     context.stroke();
-    context.fillStyle = '#94a3b8';
+    context.fillStyle = '#858585';
     context.font = '600 12px Arial';
     context.fillText('SHEAR (V)', left - 4, shearBase - 55);
 
     // Shear diagram path with progressive draw for chapter 3
     const shearDraw = chapter === 3 ? chapterProgress : 1;
     context.lineWidth = 5;
-    context.strokeStyle = '#3b82f6';
+    context.strokeStyle = '#4F7A5A';
     context.beginPath();
     const shearTop = shearBase - 45;
     const shearBot = shearBase + 45;
@@ -318,7 +319,7 @@ function drawLessonFrame(context: CanvasRenderingContext2D, progress: number) {
     if (chapter >= 4) {
       const regionAlpha = chapter === 4 ? chapterProgress * 0.25 : 0.2;
       // Positive region
-      context.fillStyle = `rgba(59,130,246,${regionAlpha})`;
+      context.fillStyle = `rgba(79,122,90,${regionAlpha})`;
       context.beginPath();
       context.moveTo(left, shearBase);
       context.lineTo(left, shearTop);
@@ -326,7 +327,7 @@ function drawLessonFrame(context: CanvasRenderingContext2D, progress: number) {
       context.lineTo(mid, shearBase);
       context.fill();
       // Negative region
-      context.fillStyle = `rgba(239,68,68,${regionAlpha})`;
+      context.fillStyle = `rgba(156,74,70,${regionAlpha})`;
       context.beginPath();
       context.moveTo(mid, shearBase);
       context.lineTo(mid, shearBot);
@@ -335,10 +336,10 @@ function drawLessonFrame(context: CanvasRenderingContext2D, progress: number) {
       context.fill();
 
       // Labels
-      context.fillStyle = '#60a5fa';
+      context.fillStyle = '#4F7A5A';
       context.font = '600 13px Arial';
       context.fillText('+6 kN', left + 10, shearTop - 8);
-      context.fillStyle = '#f87171';
+      context.fillStyle = '#9C4A46';
       context.fillText('−6 kN', right - 60, shearBot + 18);
     }
     context.globalAlpha = 1;
@@ -350,7 +351,7 @@ function drawLessonFrame(context: CanvasRenderingContext2D, progress: number) {
     context.globalAlpha = areaAlpha;
     // Arrow from shear area to moment curve
     const arrowY = shearBase + 60;
-    context.strokeStyle = '#a78bfa';
+    context.strokeStyle = '#F5C400';
     context.lineWidth = 2;
     context.setLineDash([6, 4]);
     context.beginPath();
@@ -358,14 +359,14 @@ function drawLessonFrame(context: CanvasRenderingContext2D, progress: number) {
     context.lineTo(mid, momentBase - 60);
     context.stroke();
     context.setLineDash([]);
-    context.fillStyle = '#a78bfa';
+    context.fillStyle = '#F5C400';
     context.beginPath();
     context.moveTo(mid - 6, momentBase - 68);
     context.lineTo(mid + 6, momentBase - 68);
     context.lineTo(mid, momentBase - 56);
     context.fill();
     // Area label
-    context.fillStyle = '#a78bfa';
+    context.fillStyle = '#F5C400';
     context.font = '600 12px Arial';
     context.fillText('ΔM = ∫V dx', mid + 10, arrowY + 14);
     context.globalAlpha = 1;
@@ -376,20 +377,20 @@ function drawLessonFrame(context: CanvasRenderingContext2D, progress: number) {
     const momentAlpha = chapter >= 6 ? Math.min(1, chapter === 6 ? chapterProgress : 1) : 0;
     context.globalAlpha = momentAlpha;
     // Baseline
-    context.strokeStyle = '#475569';
+    context.strokeStyle = '#CFC9BC';
     context.lineWidth = 1;
     context.beginPath();
     context.moveTo(left, momentBase);
     context.lineTo(right, momentBase);
     context.stroke();
-    context.fillStyle = '#94a3b8';
+    context.fillStyle = '#858585';
     context.font = '600 12px Arial';
     context.fillText('MOMENT (M)', left - 4, momentBase + 60);
 
     // Parabolic moment curve — progressive draw
     const drawPct = chapter === 6 ? chapterProgress : 1;
     context.lineWidth = 6;
-    context.strokeStyle = '#8b5cf6';
+    context.strokeStyle = '#DFAE00';
     context.beginPath();
     const steps = Math.floor(drawPct * 80);
     for (let i = 0; i <= steps; i++) {
@@ -403,7 +404,7 @@ function drawLessonFrame(context: CanvasRenderingContext2D, progress: number) {
 
     // Fill under moment curve
     if (drawPct > 0.6) {
-      context.fillStyle = 'rgba(139,92,246,0.12)';
+      context.fillStyle = 'rgba(223,174,0,0.12)';
       context.beginPath();
       for (let i = 0; i <= 80; i++) {
         const t = i / 80;
@@ -424,12 +425,12 @@ function drawLessonFrame(context: CanvasRenderingContext2D, progress: number) {
       const peakX = mid;
       const peakY = momentBase - 55;
       // Highlight circle
-      context.fillStyle = '#ef4444';
+      context.fillStyle = '#9C4A46';
       context.beginPath();
       context.arc(peakX, peakY, 8, 0, Math.PI * 2);
       context.fill();
       // Dashed line up from zero shear
-      context.strokeStyle = '#ef4444';
+      context.strokeStyle = '#9C4A46';
       context.lineWidth = 2;
       context.setLineDash([4, 4]);
       context.beginPath();
@@ -438,7 +439,7 @@ function drawLessonFrame(context: CanvasRenderingContext2D, progress: number) {
       context.stroke();
       context.setLineDash([]);
       // Labels
-      context.fillStyle = '#ef4444';
+      context.fillStyle = '#9C4A46';
       context.font = '700 14px Arial';
       context.fillText('Mmax', peakX + 14, peakY + 4);
       context.fillStyle = '#fbbf24';
@@ -454,7 +455,7 @@ function drawLessonFrame(context: CanvasRenderingContext2D, progress: number) {
 
   // Chapter progress indicator
   for (let index = 0; index < 8; index += 1) {
-    context.fillStyle = index <= chapter ? '#6de7f2' : 'rgba(255,255,255,0.15)';
+    context.fillStyle = index <= chapter ? '#F5C400' : 'rgba(255,255,255,0.15)';
     context.fillRect(50 + index * (width - 100) / 8, height - 14, (width - 100) / 8 - 6, 4);
   }
 }
@@ -857,10 +858,10 @@ function AnimatedStepsExperience() {
           <div className="equation-highlight mt-8 rounded-xl border border-ai-violet/35 bg-ai-violet/10 p-5 font-mono text-xl font-bold text-white">{steps[step].formula}</div>
           <svg viewBox="0 0 700 190" className="mt-8 w-full" role="img" aria-label={`Animated diagram for ${steps[step].title}`}>
             <line x1="55" y1="70" x2="645" y2="70" stroke="#f7f4ee" strokeWidth="8" />
-            <path d="M55 76 L35 112 L75 112 Z M645 76 L625 112 L665 112 Z" fill="#6de7f2" opacity=".9" />
-            <path d="M350 14 V58 M338 44 L350 58 L362 44" stroke="#f0abfc" strokeWidth="5" fill="none" className={step >= 1 ? 'diagram-pulse' : ''} />
-            {step >= 2 && <path d="M55 150 Q350 90 645 150" stroke="#8b5cf6" strokeWidth="6" fill="none" pathLength="1" className="diagram-draw" />}
-            {step >= 3 && <circle cx="350" cy="120" r="11" fill="#6de7f2" className="diagram-pulse" />}
+            <path d="M55 76 L35 112 L75 112 Z M645 76 L625 112 L665 112 Z" fill="#F5C400" opacity=".9" />
+            <path d="M350 14 V58 M338 44 L350 58 L362 44" stroke="#FFF5C2" strokeWidth="5" fill="none" className={step >= 1 ? 'diagram-pulse' : ''} />
+            {step >= 2 && <path d="M55 150 Q350 90 645 150" stroke="#DFAE00" strokeWidth="6" fill="none" pathLength="1" className="diagram-draw" />}
+            {step >= 3 && <circle cx="350" cy="120" r="11" fill="#F5C400" className="diagram-pulse" />}
           </svg>
         </div>
       </div>
@@ -894,20 +895,20 @@ function InteractiveDiagramExperience() {
               <g opacity={focus === 'load' ? 1 : .36} onMouseEnter={() => setFocus('load')}>
                 <text x="34" y="35" className="fill-slate-copy text-[14px] font-bold">LOAD MODEL</text>
                 <line x1="90" y1="105" x2="710" y2="105" stroke="#15161a" strokeWidth="10" />
-                <path d="M90 112 L66 150 L114 150 Z M710 112 L686 150 L734 150 Z" fill="#3454d1" />
+                <path d="M90 112 L66 150 L114 150 Z M710 112 L686 150 L734 150 Z" fill="#DFAE00" />
                 <path d="M400 42 V88 M386 72 L400 88 L414 72" stroke="#9e1b32" strokeWidth="6" fill="none" />
                 <text x="414" y="62" className="fill-cardinal text-[14px] font-bold">12 kN</text>
               </g>
               <g opacity={focus === 'shear' ? 1 : .32} onMouseEnter={() => setFocus('shear')}>
                 <text x="34" y="205" className="fill-slate-copy text-[14px] font-bold">SHEAR FORCE</text>
                 <line x1="90" y1="250" x2="710" y2="250" stroke="#cbd1dc" strokeWidth="2" />
-                <path d="M90 250 V215 H400 V285 H710 V250" stroke="#3454d1" strokeWidth="7" fill="rgba(52,84,209,.10)" className="diagram-draw" pathLength="1" />
+                <path d="M90 250 V215 H400 V285 H710 V250" stroke="#DFAE00" strokeWidth="7" fill="rgba(245,196,0,.14)" className="diagram-draw" pathLength="1" />
                 <text x="110" y="208" className="fill-companion text-[13px] font-bold">+6 kN</text><text x="620" y="305" className="fill-companion text-[13px] font-bold">-6 kN</text>
               </g>
               <g opacity={focus === 'moment' ? 1 : .32} onMouseEnter={() => setFocus('moment')}>
                 <text x="34" y="338" className="fill-slate-copy text-[14px] font-bold">BENDING MOMENT</text>
                 <line x1="90" y1="370" x2="710" y2="370" stroke="#cbd1dc" strokeWidth="2" />
-                <path d="M90 370 Q400 245 710 370" stroke="#7c3aed" strokeWidth="8" fill="rgba(124,58,237,.10)" className="diagram-draw" pathLength="1" />
+                <path d="M90 370 Q400 245 710 370" stroke="#DFAE00" strokeWidth="8" fill="rgba(223,174,0,.10)" className="diagram-draw" pathLength="1" />
                 <circle cx="400" cy="307" r="10" fill="#9e1b32" className="diagram-pulse" /><text x="418" y="307" className="fill-cardinal text-[13px] font-bold">Mmax</text>
               </g>
             </g>
@@ -1137,10 +1138,10 @@ function VideoExperience({ generatedVideo }: { generatedVideo: { url: string; lo
           {captionUrl && <track kind="captions" src={captionUrl} srcLang="en" label="English" default />}
         </video>
         <div className="pointer-events-none absolute inset-x-0 top-0 flex items-start justify-between bg-gradient-to-b from-black/70 to-transparent p-4">
-          <div><p className="font-mono text-[10px] font-bold text-ai-cyan">CIVL301 VIDEO LESSON</p><p className="mt-1 text-sm font-bold">{activeChapter.label}</p></div>
+          <div><p className="font-mono text-[10px] font-bold text-ai-cyan">CIVL301 VIDEO LESSON</p><p className="mt-1 text-sm font-bold">{activeChapter?.label ?? 'Video lesson'}</p></div>
           {controller.complete && <span className="rounded-full bg-success px-3 py-1 text-xs font-bold text-white">90% complete</span>}
         </div>
-        {controller.buffering && <div className="absolute inset-0 grid place-items-center bg-black/35"><LoadingPill label="Buffering video" /></div>}
+        {controller.buffering && <div className="pointer-events-none absolute inset-0 grid place-items-center bg-black/35"><LoadingPill label="Buffering video" /></div>}
       </div>
       <div className="border-t border-white/10 p-5">
         <Timeline controller={controller} label="Video timeline" />
@@ -1202,16 +1203,16 @@ function VideoFallback({ message }: { message: string }) {
             </div>
             <svg viewBox="0 0 700 200" className="mt-5 w-full" role="img" aria-label="Beam diagram with load, shear, and bending moment">
               <line x1="60" y1="55" x2="640" y2="55" stroke="#f7f4ee" strokeWidth="7" />
-              <path d="M60 60 L42 90 L78 90 Z M640 60 L622 90 L658 90 Z" fill="#6de7f2" opacity=".9" />
-              <path d="M350 10 V48 M338 34 L350 48 L362 34" stroke="#f0abfc" strokeWidth="4" fill="none" />
-              <text x="366" y="30" fill="#f0abfc" fontSize="12" fontWeight="600">12 kN</text>
+              <path d="M60 60 L42 90 L78 90 Z M640 60 L622 90 L658 90 Z" fill="#F5C400" opacity=".9" />
+              <path d="M350 10 V48 M338 34 L350 48 L362 34" stroke="#FFF5C2" strokeWidth="4" fill="none" />
+              <text x="366" y="30" fill="#FFF5C2" fontSize="12" fontWeight="600">12 kN</text>
               <line x1="60" y1="120" x2="640" y2="120" stroke="#475569" strokeWidth="1" />
-              <path d="M60 120 V96 H350 V144 H640 V120" stroke="#3b82f6" strokeWidth="4" fill="none" />
-              <text x="70" y="92" fill="#60a5fa" fontSize="11" fontWeight="600">+6 kN</text>
-              <text x="580" y="160" fill="#f87171" fontSize="11" fontWeight="600">\u22126 kN</text>
-              <path d="M60 190 Q350 130 640 190" stroke="#8b5cf6" strokeWidth="5" fill="none" />
-              <circle cx="350" cy="160" r="6" fill="#ef4444" />
-              <text x="362" y="164" fill="#ef4444" fontSize="11" fontWeight="700">Mmax</text>
+              <path d="M60 120 V96 H350 V144 H640 V120" stroke="#4F7A5A" strokeWidth="4" fill="none" />
+              <text x="70" y="92" fill="#4F7A5A" fontSize="11" fontWeight="600">+6 kN</text>
+              <text x="580" y="160" fill="#9C4A46" fontSize="11" fontWeight="600">\u22126 kN</text>
+              <path d="M60 190 Q350 130 640 190" stroke="#DFAE00" strokeWidth="5" fill="none" />
+              <circle cx="350" cy="160" r="6" fill="#9C4A46" />
+              <text x="362" y="164" fill="#9C4A46" fontSize="11" fontWeight="700">Mmax</text>
             </svg>
             <div className="mt-5 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
               {chapters.map(([time, title, text]) => (
@@ -1281,11 +1282,11 @@ function PodcastExperience() {
   const progress = controller.duration ? controller.currentTime / controller.duration : 0;
 
   return (
-    <div className="min-h-[520px] bg-[#0d151a] text-mist">
+    <div className="min-h-[520px] bg-night text-mist">
       <audio ref={audioRef} src={podcastUrl} preload="metadata" {...controller.mediaEvents} />
       <div className="grid lg:grid-cols-[300px_minmax(0,1fr)]">
-        <aside className="border-b border-white/10 bg-[#101f25] p-6 lg:border-b-0 lg:border-r">
-          <div className="aspect-square rounded-2xl border border-ai-cyan/20 bg-[radial-gradient(circle_at_35%_30%,rgba(109,231,242,.24),transparent_34%),linear-gradient(145deg,#152c35,#10151d)] p-6 shadow-2xl">
+        <aside className="border-b border-white/10 bg-night-soft p-6 lg:border-b-0 lg:border-r">
+          <div className="aspect-square rounded-2xl border border-companion/25 bg-[radial-gradient(circle_at_35%_30%,rgba(245,196,0,.22),transparent_34%),linear-gradient(145deg,#232323,#111111)] p-6 shadow-2xl">
             <div className="flex h-full flex-col justify-between"><span className="grid h-12 w-12 place-items-center rounded-full bg-ai-cyan text-night"><Headphones size={22} /></span><div><p className="font-mono text-[10px] font-bold text-ai-cyan">STRUCTURAL FIELD NOTE 04</p><h3 className="mt-2 font-display text-2xl font-bold">Where moment reaches its peak</h3><p className="mt-2 text-sm text-mist-muted">Dr Avery Tan / CIVL301</p></div></div>
           </div>
           <p className="mt-5 text-xs leading-5 text-mist-muted">Prerecorded narration (22 kHz WAV). Listening position and bookmarks are stored on this device.</p>
@@ -1335,7 +1336,7 @@ function PodcastExperience() {
             <MediaButton label="Skip forward 10 seconds" onClick={() => controller.seek(controller.currentTime + 10)}>10<FastForward size={15} /></MediaButton>
             <MediaButton label={controller.muted ? 'Unmute podcast' : 'Mute podcast'} onClick={controller.toggleMuted} active={controller.muted}>{controller.muted ? <VolumeX size={15} /> : <Volume2 size={15} />}</MediaButton>
             <label className="flex min-h-10 items-center gap-2 rounded-full border border-white/12 bg-white/[0.07] px-3 text-xs font-bold"><span className="sr-only">Podcast volume</span><input aria-label="Podcast volume" type="range" min="0" max="1" step=".05" value={controller.muted ? 0 : controller.volume} onChange={(event) => controller.setVolume(Number(event.target.value))} className="w-16 accent-ai-cyan" /></label>
-            <select aria-label="Podcast playback speed" value={controller.rate} onChange={(event) => controller.setRate(Number(event.target.value))} className="min-h-10 rounded-full border border-white/12 bg-[#14232a] px-3 text-xs font-bold text-mist"><option value="0.75">0.75x</option><option value="1">1x</option><option value="1.25">1.25x</option><option value="1.5">1.5x</option><option value="2">2x</option></select>
+            <select aria-label="Podcast playback speed" value={controller.rate} onChange={(event) => controller.setRate(Number(event.target.value))} className="min-h-10 rounded-full border border-white/12 bg-night-panel px-3 text-xs font-bold text-mist"><option value="0.75">0.75x</option><option value="1">1x</option><option value="1.25">1.25x</option><option value="1.5">1.5x</option><option value="2">2x</option></select>
             <MediaButton label="Bookmark current podcast position" onClick={addBookmark}><Bookmark size={15} />Bookmark</MediaButton>
             <MediaButton label="Download podcast transcript" onClick={downloadTranscript}><Download size={15} />Transcript</MediaButton>
           </div>
@@ -1355,10 +1356,10 @@ function PodcastExperience() {
 
 function ComicExperience() {
   const panels = [
-    { scene: 'The brief', speaker: 'Maya, student engineer', speech: 'The load moved. Which part of my diagram changes first?', caption: 'A design review begins with the load path, not the final curve.', tone: 'bg-[#dce9f7]' },
-    { scene: 'The check', speaker: 'Studio tutor', speech: 'Recalculate reactions, then follow the shear jumps from left to right.', caption: 'Shear provides the direction of moment change.', tone: 'bg-[#e7e0f7]' },
-    { scene: 'The connection', speaker: 'Maya', speech: 'So the moment peak moves to where shear crosses zero?', caption: 'The student connects the two diagrams rather than memorising a shape.', tone: 'bg-[#e2f1e8]' },
-    { scene: 'The decision', speaker: 'Studio tutor', speech: 'Yes. Now verify the sign convention and explain what that means for bending demand.', caption: 'Engineering judgement follows the mathematical relationship.', tone: 'bg-[#f7e8dc]' },
+    { scene: 'The brief', speaker: 'Maya, student engineer', speech: 'The load moved. Which part of my diagram changes first?', caption: 'A design review begins with the load path, not the final curve.', tone: 'bg-paper' },
+    { scene: 'The check', speaker: 'Studio tutor', speech: 'Recalculate reactions, then follow the shear jumps from left to right.', caption: 'Shear provides the direction of moment change.', tone: 'bg-companion-tint' },
+    { scene: 'The connection', speaker: 'Maya', speech: 'So the moment peak moves to where shear crosses zero?', caption: 'The student connects the two diagrams rather than memorising a shape.', tone: 'bg-success-tint' },
+    { scene: 'The decision', speaker: 'Studio tutor', speech: 'Yes. Now verify the sign convention and explain what that means for bending demand.', caption: 'Engineering judgement follows the mathematical relationship.', tone: 'bg-danger-tint' },
   ];
   const [panel, setPanel] = useState(0);
   const move = (direction: number) => setPanel((value) => Math.max(0, Math.min(panels.length - 1, value + direction)));
@@ -1367,7 +1368,7 @@ function ComicExperience() {
       <ExperienceHeader eyebrow="Sequential visual story" title="A design conversation, one decision at a time" description="Use Previous and Next, or the left and right arrow keys, to move through the scenario." action={<span className="font-mono text-xs font-bold text-slate-soft">{panel + 1} / {panels.length}</span>} />
       <div className={cn('relative mt-7 min-h-[350px] overflow-hidden rounded-2xl border border-line p-6 transition-colors duration-500 sm:p-10', panels[panel].tone)}>
         <div className="absolute right-6 top-6 font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-slate-copy">Panel {panel + 1}: {panels[panel].scene}</div>
-        <svg viewBox="0 0 600 210" className="mx-auto mt-8 max-w-2xl" aria-hidden="true"><line x1="70" y1="150" x2="530" y2="150" stroke="#15161a" strokeWidth="12" /><path d="M70 157 L45 200 L95 200 Z M530 157 L505 200 L555 200 Z" fill="#3454d1" /><path d="M300 45 V130 M282 110 L300 130 L318 110" stroke="#9e1b32" strokeWidth="8" fill="none" /></svg>
+        <svg viewBox="0 0 600 210" className="mx-auto mt-8 max-w-2xl" aria-hidden="true"><line x1="70" y1="150" x2="530" y2="150" stroke="#15161a" strokeWidth="12" /><path d="M70 157 L45 200 L95 200 Z M530 157 L505 200 L555 200 Z" fill="#DFAE00" /><path d="M300 45 V130 M282 110 L300 130 L318 110" stroke="#9e1b32" strokeWidth="8" fill="none" /></svg>
         <div className="comic-bubble mx-auto mt-2 max-w-xl rounded-2xl border-2 border-ink bg-white p-5 shadow-[8px_8px_0_#15161a]"><p className="text-xs font-bold uppercase text-companion">{panels[panel].speaker}</p><p className="mt-2 font-display text-xl font-bold leading-8 text-ink">"{panels[panel].speech}"</p></div>
         <p className="mx-auto mt-8 max-w-2xl text-center text-sm font-semibold leading-6 text-slate-copy">{panels[panel].caption}</p>
       </div>
@@ -1389,7 +1390,7 @@ function AnalogyExperience() {
       <div className="mt-7 grid gap-6 lg:grid-cols-[240px_minmax(0,1fr)]">
         <div className="space-y-2" role="tablist" aria-label="Analogy views">{(['similarities', 'limits', 'formal'] as const).map((item) => <button key={item} type="button" role="tab" aria-selected={mode === item} onClick={() => setMode(item)} className={cn('w-full rounded-xl border p-4 text-left text-sm font-bold capitalize transition', mode === item ? 'border-ink bg-ink text-white' : 'border-line bg-white hover:border-companion')}>{item === 'formal' ? 'Formal connection' : item}</button>)}</div>
         <div className="overflow-hidden rounded-2xl border border-line bg-paper">
-          <div className="grid sm:grid-cols-2"><div className="border-b border-line p-6 sm:border-b-0 sm:border-r"><p className="font-mono text-[10px] font-bold uppercase text-companion">Everyday model</p><div className="mt-5 flex h-40 items-end gap-2">{[40, 58, 74, 90, 76, 56, 38].map((height, index) => <div key={index} className="flex-1 rounded-t-md bg-companion/80 transition-all duration-500" style={{ height: `${mode === 'limits' ? 52 : height}%` }} />)}</div><p className="mt-3 text-center text-sm font-bold">Running balance</p></div><div className="p-6"><p className="font-mono text-[10px] font-bold uppercase text-ai-violet">Engineering model</p><svg viewBox="0 0 300 170" className="mt-5 w-full" aria-hidden="true"><path d="M15 145 Q150 15 285 145" fill="none" stroke="#7c3aed" strokeWidth="8" className="diagram-draw" pathLength="1" /><line x1="15" y1="145" x2="285" y2="145" stroke="#cbd1dc" strokeWidth="2" /><circle cx="150" cy="80" r="9" fill="#9e1b32" /></svg><p className="mt-3 text-center text-sm font-bold">Moment accumulation</p></div></div>
+          <div className="grid sm:grid-cols-2"><div className="border-b border-line p-6 sm:border-b-0 sm:border-r"><p className="font-mono text-[10px] font-bold uppercase text-companion">Everyday model</p><div className="mt-5 flex h-40 items-end gap-2">{[40, 58, 74, 90, 76, 56, 38].map((height, index) => <div key={index} className="flex-1 rounded-t-md bg-companion/80 transition-all duration-500" style={{ height: `${mode === 'limits' ? 52 : height}%` }} />)}</div><p className="mt-3 text-center text-sm font-bold">Running balance</p></div><div className="p-6"><p className="font-mono text-[10px] font-bold uppercase text-ai-violet">Engineering model</p><svg viewBox="0 0 300 170" className="mt-5 w-full" aria-hidden="true"><path d="M15 145 Q150 15 285 145" fill="none" stroke="#DFAE00" strokeWidth="8" className="diagram-draw" pathLength="1" /><line x1="15" y1="145" x2="285" y2="145" stroke="#cbd1dc" strokeWidth="2" /><circle cx="150" cy="80" r="9" fill="#9e1b32" /></svg><p className="mt-3 text-center text-sm font-bold">Moment accumulation</p></div></div>
           <div className="border-t border-line bg-white p-6"><h4 className="font-display text-xl font-bold">{content[mode].title}</h4><p className="mt-3 text-sm leading-7 text-slate-copy">{content[mode].text}</p><div className="mt-5 grid gap-2 sm:grid-cols-3">{content[mode].points.map((point) => <div key={point} className="rounded-lg border border-line bg-paper p-3 text-xs font-bold leading-5 text-ink">{point}</div>)}</div></div>
         </div>
       </div>
@@ -1426,7 +1427,7 @@ function PracticeExperience({ onAsk }: { onAsk: (question: string) => void }) {
         {hint && <div className="mt-4 rounded-xl border border-warn/25 bg-warn-tint p-4 text-sm leading-6 text-ink"><strong>Hint:</strong> {question.hint}</div>}
         {revealed && <div role="status" className={cn('mt-4 rounded-xl border p-5', selected === question.answer ? 'border-success/25 bg-success-tint' : 'border-danger/20 bg-danger-tint')}><p className="font-bold">{selected === question.answer ? 'Correct reasoning' : 'Review the relationship'}</p><p className="mt-2 text-sm leading-6 text-slate-copy">{question.explanation}</p></div>}
       </div>
-      <aside className="border-t border-line bg-night p-6 text-mist lg:border-l lg:border-t-0"><p className="font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-ai-cyan">Mastery</p><div className="mt-5 grid place-items-center"><div className="grid h-36 w-36 place-items-center rounded-full" style={{ background: `conic-gradient(#6de7f2 ${mastery}%, rgba(255,255,255,.1) 0)` }}><div className="grid h-28 w-28 place-items-center rounded-full bg-night"><div className="text-center"><p className="font-display text-3xl font-bold">{mastery}%</p><p className="text-xs text-mist-muted">demonstrated</p></div></div></div></div><div className="mt-6 space-y-3 text-sm text-mist-muted"><p className="flex justify-between"><span>Correct</span><strong className="text-mist">{correct}/{questions.length}</strong></p><p className="flex justify-between"><span>Current confidence</span><strong className="capitalize text-mist">{confidence ?? 'Not set'}</strong></p></div><Button variant="ai" className="mt-6 w-full justify-center" onClick={() => onAsk(`Explain why the answer to practice question ${index + 1} works`)}><MessageSquareText size={15} />Ask AI Tutor</Button></aside>
+      <aside className="border-t border-line bg-night p-6 text-mist lg:border-l lg:border-t-0"><p className="font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-ai-cyan">Mastery</p><div className="mt-5 grid place-items-center"><div className="grid h-36 w-36 place-items-center rounded-full" style={{ background: `conic-gradient(#F5C400 ${mastery}%, rgba(255,255,255,.1) 0)` }}><div className="grid h-28 w-28 place-items-center rounded-full bg-night"><div className="text-center"><p className="font-display text-3xl font-bold">{mastery}%</p><p className="text-xs text-mist-muted">demonstrated</p></div></div></div></div><div className="mt-6 space-y-3 text-sm text-mist-muted"><p className="flex justify-between"><span>Correct</span><strong className="text-mist">{correct}/{questions.length}</strong></p><p className="flex justify-between"><span>Current confidence</span><strong className="capitalize text-mist">{confidence ?? 'Not set'}</strong></p></div><Button variant="ai" className="mt-6 w-full justify-center" onClick={() => onAsk(`Explain why the answer to practice question ${index + 1} works`)}><MessageSquareText size={15} />Ask AI Tutor</Button></aside>
     </div>
   );
 }

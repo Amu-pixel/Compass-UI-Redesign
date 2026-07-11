@@ -37,9 +37,9 @@ export default function AppLayout() {
 
   return (
     <div className="min-h-screen bg-paper text-ink">
-      <aside className="fixed left-0 top-0 z-30 hidden h-screen w-72 border-r border-white/10 bg-[#0B0D12] px-4 py-5 text-white lg:block">
+      <aside className="fixed left-0 top-0 z-30 hidden h-screen w-72 border-r border-white/10 bg-night px-4 py-5 text-white lg:block">
         <div className="mb-7 flex items-center gap-3 px-2">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-ai-cyan/30 bg-ai-cyan/10 text-ai-cyan shadow-[0_0_26px_rgba(109,231,242,0.12)]">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-companion/40 bg-companion text-ink shadow-sm">
             <Sparkles size={21} />
           </div>
           <div>
@@ -60,7 +60,7 @@ export default function AppLayout() {
               className={({ isActive }) =>
                 cn(
                   'nav-active-motion flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold outline-none transition focus-visible:ring-2 focus-visible:ring-ai-cyan/70',
-                  isActive ? 'bg-white text-ink shadow-sm' : 'text-white/66 hover:bg-white/10 hover:text-white',
+                  isActive ? 'bg-companion text-ink shadow-sm' : 'text-white/66 hover:bg-white/10 hover:text-white',
                 )
               }
             >

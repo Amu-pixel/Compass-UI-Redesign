@@ -26,16 +26,16 @@ export function Button({
   ariaLabel?: string;
 }) {
   const classes = cn(
-    'premium-focus inline-flex shrink-0 items-center justify-center gap-2 rounded-full border text-sm font-semibold outline-none focus-visible:ring-2 focus-visible:ring-ai-cyan/70 focus-visible:ring-offset-2 focus-visible:ring-offset-night disabled:pointer-events-none disabled:opacity-50',
+    'premium-focus inline-flex shrink-0 items-center justify-center gap-2 rounded-full border text-sm font-semibold outline-none focus-visible:ring-2 focus-visible:ring-ai-cyan/70 focus-visible:ring-offset-2 focus-visible:ring-offset-paper disabled:pointer-events-none disabled:opacity-50',
     size === 'sm' && 'min-h-9 px-3.5 py-2 text-xs',
     size === 'md' && 'min-h-11 px-5 py-3',
     size === 'lg' && 'min-h-12 px-6 py-3.5',
     size === 'icon' && 'h-11 w-11 p-0',
-    variant === 'primary' && 'border-ink bg-ink text-white shadow-sm hover:bg-cardinal-dark',
-    variant === 'secondary' && 'border-line bg-white text-ink hover:border-companion hover:text-companion',
-    variant === 'ghost' && 'border-transparent text-slate-copy hover:bg-paper-dim',
-    variant === 'ai' && 'border-ai-cyan/30 bg-gradient-to-r from-ai-cyan/18 via-ai-violet/18 to-ai-rose/18 text-mist shadow-[0_0_28px_rgba(109,231,242,0.14)] hover:border-ai-cyan/60',
-    variant === 'danger' && 'border-danger/20 bg-danger-tint text-danger hover:border-danger/40',
+    variant === 'primary' && 'border-ink bg-ink text-white shadow-sm hover:bg-night-elevated',
+    variant === 'secondary' && 'border-line bg-white text-ink hover:border-companion hover:bg-companion-tint',
+    variant === 'ghost' && 'border-transparent text-slate-copy hover:bg-paper-dim hover:text-ink',
+    variant === 'ai' && 'border-companion bg-companion text-ink shadow-sm hover:border-ai-violet hover:bg-ai-violet',
+    variant === 'danger' && 'border-danger/25 bg-danger-tint text-danger hover:border-danger/45',
     className,
   );
   if (to) {
@@ -91,7 +91,7 @@ export function Card({
         'status-lift min-w-0 break-words rounded-2xl border p-5 transition-colors',
         variant === 'default' && 'border-line bg-white text-ink shadow-sm',
         variant === 'dark' && 'border-line-dark bg-night-panel text-mist shadow-premium',
-        variant === 'ai' && 'border-ai-cyan/24 bg-gradient-to-br from-night-panel via-night-soft to-night text-mist shadow-[0_22px_70px_rgba(109,231,242,0.10)]',
+        variant === 'ai' && 'border-companion/40 bg-night text-mist shadow-premium',
         variant === 'flat' && 'border-line bg-paper text-ink shadow-none',
         className,
       )}
@@ -178,7 +178,7 @@ export function Badge({
       className={cn(
         'inline-flex items-center gap-1.5 rounded-full border px-3 py-1 font-mono text-[11px] font-semibold',
         tone === 'neutral' && 'border-line bg-white text-slate-copy',
-        tone === 'ai' && 'border-ai-cyan/30 bg-ai-cyan/10 text-ai-cyan',
+        tone === 'ai' && 'border-companion/40 bg-companion-tint text-ink',
         tone === 'success' && 'border-success/20 bg-success-tint text-success',
         tone === 'warning' && 'border-warn/20 bg-warn-tint text-warn',
         tone === 'danger' && 'border-danger/20 bg-danger-tint text-danger',
@@ -281,7 +281,7 @@ export function PlaceholderState({
   text?: string;
 }) {
   return (
-    <div className="rounded-2xl border border-dashed border-companion/35 bg-companion-tint/70 p-4">
+    <div className="rounded-2xl border border-dashed border-companion/45 bg-companion-tint/70 p-4">
       <div className="flex items-start gap-3">
         <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-white text-companion shadow-sm">
           <Sparkles size={16} />

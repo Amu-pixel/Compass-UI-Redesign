@@ -31,9 +31,9 @@ export default function CoursesPage() {
   return (
     <div className="min-h-screen bg-night text-mist">
       {toast && <Toast message={toast} />}
-      <aside className="fixed left-0 top-0 hidden h-screen w-72 border-r border-white/10 bg-[#0B0D12] p-5 text-white lg:block">
+      <aside className="fixed left-0 top-0 hidden h-screen w-72 border-r border-white/10 bg-night p-5 text-white lg:block">
         <div className="flex items-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-ai-cyan/30 bg-ai-cyan/10 text-ai-cyan shadow-[0_0_26px_rgba(109,231,242,0.12)]">
+          <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-companion/40 bg-companion text-ink shadow-sm">
             <Sparkles size={21} />
           </div>
           <div>
@@ -68,7 +68,7 @@ export default function CoursesPage() {
                 type="button"
                 aria-current={item.current ? 'page' : undefined}
                 onClick={() => handleSidebarNav(item.label)}
-                className={`w-full rounded-2xl px-4 py-3 text-left text-sm font-semibold transition ${item.current ? 'bg-white text-ink' : 'text-white/68 hover:bg-white/10 hover:text-white'}`}
+                className={`w-full rounded-2xl px-4 py-3 text-left text-sm font-semibold transition ${item.current ? 'bg-companion text-ink' : 'text-white/68 hover:bg-white/10 hover:text-white'}`}
               >
                 {item.label}
               </button>
@@ -95,7 +95,7 @@ export default function CoursesPage() {
 
         <section className="mx-auto max-w-7xl px-5 py-6 sm:px-8">
           <div className="grid gap-5 xl:grid-cols-[1.1fr_0.9fr]">
-            <div className="rounded-[28px] border border-ai-cyan/20 bg-gradient-to-br from-ai-cyan/12 via-ai-violet/10 to-ai-rose/8 p-6 shadow-[0_0_54px_rgba(109,231,242,0.08)]">
+            <div className="rounded-[28px] border border-companion/35 bg-night-panel p-6 shadow-premium">
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div>
                   <Badge tone="ai">Next action</Badge>
@@ -120,7 +120,7 @@ export default function CoursesPage() {
             <div className="grid gap-4 sm:grid-cols-3 xl:grid-cols-1">
               <Link
                 to="/demo/assessment"
-                className="premium-focus rounded-3xl border border-white/10 bg-white/[0.045] p-5 text-left outline-none hover:border-ai-cyan/30 focus-visible:ring-2 focus-visible:ring-ai-cyan/70"
+                className="premium-focus rounded-3xl border border-white/10 bg-white/[0.045] p-5 text-left outline-none hover:border-companion/45 focus-visible:ring-2 focus-visible:ring-ai-cyan/70"
               >
                 <FileCheck2 className="text-ai-cyan" size={20} />
                 <p className="mt-4 font-display text-lg font-bold text-mist">Assignments</p>
@@ -129,7 +129,7 @@ export default function CoursesPage() {
               <button
                 type="button"
                 onClick={() => notify('Resources are available from your enrolled course pages.')}
-                className="premium-focus rounded-3xl border border-white/10 bg-white/[0.045] p-5 text-left outline-none hover:border-ai-cyan/30 focus-visible:ring-2 focus-visible:ring-ai-cyan/70"
+                className="premium-focus rounded-3xl border border-white/10 bg-white/[0.045] p-5 text-left outline-none hover:border-companion/45 focus-visible:ring-2 focus-visible:ring-ai-cyan/70"
               >
                 <LibraryBig className="text-ai-cyan" size={20} />
                 <p className="mt-4 font-display text-lg font-bold text-mist">Resources</p>
@@ -138,7 +138,7 @@ export default function CoursesPage() {
               <button
                 type="button"
                 onClick={() => notify('Progress tracking is available from your enrolled course pages.')}
-                className="premium-focus rounded-3xl border border-white/10 bg-white/[0.045] p-5 text-left outline-none hover:border-ai-cyan/30 focus-visible:ring-2 focus-visible:ring-ai-cyan/70"
+                className="premium-focus rounded-3xl border border-white/10 bg-white/[0.045] p-5 text-left outline-none hover:border-companion/45 focus-visible:ring-2 focus-visible:ring-ai-cyan/70"
               >
                 <BarChart3 className="text-ai-cyan" size={20} />
                 <p className="mt-4 font-display text-lg font-bold text-mist">Progress</p>
@@ -194,7 +194,7 @@ export default function CoursesPage() {
             <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
               {filteredCourses.map((course) => (
                 <Link key={course.code} to="/demo" className="group rounded-[28px] outline-none focus-visible:ring-2 focus-visible:ring-ai-cyan/70">
-                  <article className="h-full overflow-hidden rounded-[28px] border border-white/10 bg-white/[0.055] transition group-hover:-translate-y-1 group-hover:border-ai-cyan/35 group-hover:shadow-[0_24px_70px_rgba(0,0,0,0.28)]">
+                  <article className="h-full overflow-hidden rounded-[28px] border border-white/10 bg-white/[0.055] transition group-hover:-translate-y-1 group-hover:border-companion/45 group-hover:shadow-[0_24px_70px_rgba(0,0,0,0.28)]">
                     <div className="relative h-32" style={{ background: course.image }}>
                       <div className="absolute left-4 top-4 rounded-full bg-night/75 px-3 py-1 font-mono text-xs font-bold text-mist backdrop-blur">{course.code}</div>
                       <div className="absolute bottom-4 right-4 flex h-11 w-11 items-center justify-center rounded-2xl bg-white/15 text-white backdrop-blur">
@@ -211,7 +211,7 @@ export default function CoursesPage() {
                           <span>{course.progress}%</span>
                         </div>
                         <div className="h-2 rounded-full bg-white/10">
-                          <div className="h-2 rounded-full bg-gradient-to-r from-ai-cyan to-ai-violet" style={{ width: `${course.progress}%` }} />
+                          <div className="h-2 rounded-full bg-companion" style={{ width: `${course.progress}%` }} />
                         </div>
                       </div>
                       <p className="mt-4 rounded-2xl border border-white/10 bg-white/[0.05] p-3 text-sm font-semibold leading-5 text-mist-muted">{course.nextAssessment}</p>

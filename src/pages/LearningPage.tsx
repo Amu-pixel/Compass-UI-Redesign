@@ -134,6 +134,7 @@ export default function LearningPage() {
       : 'simple';
   });
   const [contextExpanded, setContextExpanded] = useState(false);
+  const [tutorCollapsed, setTutorCollapsed] = useState(false);
   const [toast, setToast] = useState('');
   const [contactOpen, setContactOpen] = useState(false);
   const [contactReason, setContactReason] = useState('Concept clarification');
@@ -419,18 +420,19 @@ export default function LearningPage() {
           )}
         </div>
 
-        <div className="grid gap-3 rounded-2xl border border-line bg-white p-4 shadow-sm md:grid-cols-4">
-          {[
-            ['Current lesson', `${unit.week}: ${unit.topic}`],
-            ['Objective', 'Use shear area to construct moment'],
-            ['Progress', '68% through Structural Analysis 301'],
-            ['Next action', 'Apply reasoning to Assignment 2'],
-          ].map(([label, value]) => (
-            <div key={label} className="rounded-xl border border-line bg-paper px-4 py-3">
-              <p className="font-mono text-[10px] font-semibold uppercase text-slate-soft">{label}</p>
-              <p className="mt-1 text-sm font-bold leading-5 text-ink">{value}</p>
-            </div>
-          ))}
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-2xl border border-line bg-white px-5 py-3 shadow-sm">
+          <span className="font-mono text-[11px] font-semibold uppercase tracking-wide text-slate-soft">
+            {unit.week}: {unit.topic}
+          </span>
+          <span className="hidden h-3.5 w-px bg-line sm:block" aria-hidden="true" />
+          <span className="text-xs font-semibold text-slate-copy">Use shear area to construct moment</span>
+          <span className="ml-auto flex items-center gap-2 text-xs font-semibold text-slate-copy">
+            <span className="text-slate-soft">Progress</span>
+            <span className="h-1.5 w-24 overflow-hidden rounded-full bg-paper-dim" role="progressbar" aria-valuenow={68} aria-valuemin={0} aria-valuemax={100} aria-label="Course progress">
+              <span className="block h-full w-[68%] rounded-full bg-companion" />
+            </span>
+            <span className="tabular-nums">68%</span>
+          </span>
         </div>
 
         <AcademicLessonCanvas onNotify={notify} onAsk={sendMessage} />
@@ -456,6 +458,16 @@ export default function LearningPage() {
             </div>
             <div className="flex items-center gap-2">
               <Badge tone="ai">AI Companion</Badge>
+              <button
+                type="button"
+                aria-expanded={!tutorCollapsed}
+                aria-controls="tutor-conversation-body"
+                onClick={() => setTutorCollapsed((value) => !value)}
+                className="flex items-center gap-1 rounded-full px-2 py-1 text-xs font-semibold text-slate-soft hover:bg-paper hover:text-ink"
+              >
+                {tutorCollapsed ? 'Expand' : 'Collapse'}
+                {tutorCollapsed ? <ChevronDown size={13} /> : <ChevronUp size={13} />}
+              </button>
               {hasMessages && (
                 <button
                   type="button"
@@ -475,45 +487,52 @@ export default function LearningPage() {
           </div>
 
           {/* Messages */}
-          <div aria-label="AI Tutor conversation" aria-busy={loading} className="min-h-[420px] space-y-4 overflow-y-auto px-5 py-5" style={{ maxHeight: '52vh' }}>
-            {messages.length === 0 && !loading && (
-              <div className="flex flex-col items-center justify-center py-16 text-center">
-                <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl border border-companion/20 bg-companion-tint text-companion">
-                  <Sparkles size={26} />
+          {!tutorCollapsed && (
+            <div id="tutor-conversation-body" aria-label="AI Tutor conversation" aria-busy={loading} className="min-h-[420px] space-y-4 overflow-y-auto px-5 py-5" style={{ maxHeight: '52vh' }}>
+              {messages.length === 0 && !loading && (
+                <div className="flex flex-col items-center justify-center py-16 text-center">
+                  <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl border border-companion/20 bg-companion-tint text-companion">
+                    <Sparkles size={26} />
+                  </div>
+                  <h3 className="font-display text-xl font-bold text-ink">Start a conversation</h3>
+                  <p className="mt-2 max-w-sm text-sm leading-6 text-slate-copy">
+                    Ask about {unit.topic}. The AI Tutor will explain concepts using
+                    Week 4 lecture slides and cite its sources.
+                  </p>
+                  <p className="mt-4 text-xs text-slate-soft">
+                    Or use a quick action on the right to begin.
+                  </p>
                 </div>
-                <h3 className="font-display text-xl font-bold text-ink">Start a conversation</h3>
-                <p className="mt-2 max-w-sm text-sm leading-6 text-slate-copy">
-                  Ask about {unit.topic}. The AI Tutor will explain concepts using
-                  Week 4 lecture slides and cite its sources.
-                </p>
-                <p className="mt-4 text-xs text-slate-soft">
-                  Or use a quick action on the right to begin.
-                </p>
-              </div>
-            )}
+              )}
 
-            {messages.some((message) => message.pinned) && (
-              <div className="rounded-xl border border-companion/25 bg-companion-tint/60 p-3">
-                <p className="flex items-center gap-2 text-xs font-bold text-companion"><Bookmark size={13} />Pinned answers</p>
-                <div className="mt-2 space-y-2">
-                  {messages.filter((message) => message.pinned).map((message) => <p key={message.text} className="line-clamp-2 text-xs leading-5 text-slate-copy">{message.text}</p>)}
+              {messages.some((message) => message.pinned) && (
+                <div className="rounded-xl border border-companion/25 bg-companion-tint/60 p-3">
+                  <p className="flex items-center gap-2 text-xs font-bold text-companion"><Bookmark size={13} />Pinned answers</p>
+                  <div className="mt-2 space-y-2">
+                    {messages.filter((message) => message.pinned).map((message) => <p key={message.text} className="line-clamp-2 text-xs leading-5 text-slate-copy">{message.text}</p>)}
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
 
-            {messages.map((message, index) => (
-              <AiTutorMessage
-                key={`${message.role}-${index}`}
-                message={message}
-                onFollowUp={handleTutorAction}
-                onPin={message.role === 'ai' ? () => togglePinned(index) : undefined}
-              />
-            ))}
+              {messages.map((message, index) => (
+                <AiTutorMessage
+                  key={`${message.role}-${index}`}
+                  message={message}
+                  onFollowUp={handleTutorAction}
+                  onPin={message.role === 'ai' ? () => togglePinned(index) : undefined}
+                />
+              ))}
 
-            {loading && !streamingMessage && <ThinkingIndicator />}
-            {streamingMessage && <AiTutorMessage message={streamingMessage} onFollowUp={handleTutorAction} streaming />}
-            <div ref={messagesEndRef} />
-          </div>
+              {loading && !streamingMessage && <ThinkingIndicator />}
+              {streamingMessage && <AiTutorMessage message={streamingMessage} onFollowUp={handleTutorAction} streaming />}
+              <div ref={messagesEndRef} />
+            </div>
+          )}
+          {tutorCollapsed && (
+            <div className="px-5 py-4 text-xs leading-5 text-slate-soft">
+              Conversation hidden to keep the lesson in focus. Select Expand to continue with the AI Tutor.
+            </div>
+          )}
           <div className="sr-only" role="status" aria-live="polite" aria-atomic="true">{announcement}</div>
 
           {/* Composer */}
@@ -851,16 +870,16 @@ function BeamDiagram({ large = false }: { large?: boolean }) {
         <line x1="70" y1="78" x2="450" y2="78" stroke="#15161A" strokeWidth="8" strokeLinecap="round" />
         <polygon points="82,92 62,132 102,132" fill="#9E1B32" opacity="0.9" />
         <polygon points="438,92 418,132 458,132" fill="#9E1B32" opacity="0.9" />
-        <line x1="260" y1="38" x2="260" y2="78" stroke="#3454D1" strokeWidth="5" strokeLinecap="round" />
-        <polygon points="260,86 246,62 274,62" fill="#3454D1" />
-        <text x="272" y="55" fill="#3454D1" fontSize="14" fontWeight="700">12 kN load</text>
+        <line x1="260" y1="38" x2="260" y2="78" stroke="#DFAE00" strokeWidth="5" strokeLinecap="round" />
+        <polygon points="260,86 246,62 274,62" fill="#DFAE00" />
+        <text x="272" y="55" fill="#DFAE00" fontSize="14" fontWeight="700">12 kN load</text>
         <path d="M80 170 L260 122 L440 170" fill="none" stroke="#157F3C" strokeWidth="5" strokeLinecap="round" />
-        <path d="M80 202 C170 144 350 144 440 202" fill="none" stroke="#3454D1" strokeWidth="5" strokeLinecap="round" />
-        <circle cx="260" cy="122" r="7" fill="#3454D1" />
-        <line x1="260" y1="122" x2="260" y2="214" stroke="#3454D1" strokeDasharray="6 6" />
+        <path d="M80 202 C170 144 350 144 440 202" fill="none" stroke="#DFAE00" strokeWidth="5" strokeLinecap="round" />
+        <circle cx="260" cy="122" r="7" fill="#DFAE00" />
+        <line x1="260" y1="122" x2="260" y2="214" stroke="#DFAE00" strokeDasharray="6 6" />
         <text x="286" y="134" fill="#15161A" fontSize="13" fontWeight="700">zero shear / peak moment</text>
         <text x="82" y="160" fill="#157F3C" fontSize="13" fontWeight="700">shear trend</text>
-        <text x="82" y="226" fill="#3454D1" fontSize="13" fontWeight="700">moment diagram</text>
+        <text x="82" y="226" fill="#DFAE00" fontSize="13" fontWeight="700">moment diagram</text>
       </svg>
     </div>
   );

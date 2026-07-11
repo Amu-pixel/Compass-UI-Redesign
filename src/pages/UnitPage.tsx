@@ -376,7 +376,7 @@ function UnitMaterialsTab({
                     point often marks a maximum or minimum moment.
                   </p>
                 </div>
-                <div className="rounded-xl border border-companion/25 bg-gradient-to-br from-companion-tint to-white p-5 shadow-[0_0_24px_rgba(52,84,209,0.10)]">
+                <div className="rounded-xl border border-companion/25 bg-gradient-to-br from-companion-tint to-white p-5 shadow-[0_0_24px_rgba(245,196,0,0.14)]">
                   <p className="flex items-center gap-2 font-mono text-xs font-semibold uppercase text-companion">
                     <Sparkles size={12} /> AI Companion
                   </p>
@@ -387,7 +387,7 @@ function UnitMaterialsTab({
                 </div>
               </div>
               {/* Diagram placeholder */}
-              <div className="mt-6 flex h-28 items-center justify-center rounded-xl border border-dashed border-companion/30 bg-gradient-to-r from-white via-companion-tint to-[#f3e8ff]">
+              <div className="mt-6 flex h-28 items-center justify-center rounded-xl border border-dashed border-companion/30 bg-gradient-to-r from-white via-companion-tint to-[#FFF5C2]">
                 <p className="font-mono text-xs font-semibold text-slate-soft">
                   Shear / Moment diagram
                 </p>
@@ -421,7 +421,7 @@ function UnitMaterialsTab({
       </section>
 
       {/* AI Companion panel */}
-      <Card className="h-fit border-companion/25 bg-gradient-to-br from-white to-companion-tint/70 shadow-[0_0_36px_rgba(52,84,209,0.10)]">
+      <Card className="h-fit border-companion/25 bg-gradient-to-br from-white to-companion-tint/70 shadow-[0_0_36px_rgba(245,196,0,0.14)]">
         {/* Panel header */}
         <div className="mb-4 flex items-center justify-between gap-3">
           <div className="flex items-center gap-2">

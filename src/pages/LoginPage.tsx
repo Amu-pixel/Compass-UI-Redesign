@@ -72,11 +72,11 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen overflow-hidden bg-night text-mist">
-      <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(circle_at_18%_14%,rgba(109,231,242,0.16),transparent_28%),radial-gradient(circle_at_82%_8%,rgba(139,92,246,0.12),transparent_30%),linear-gradient(180deg,#0F1117_0%,#111522_54%,#0B0D12_100%)]" />
+      <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(circle_at_18%_14%,rgba(245,196,0,0.16),transparent_28%),radial-gradient(circle_at_82%_8%,rgba(255,245,194,0.10),transparent_30%),linear-gradient(180deg,#111111_0%,#1B1B1B_54%,#0C0C0C_100%)]" />
       <div className="relative mx-auto flex min-h-screen w-full max-w-7xl flex-col px-5 py-5 sm:px-8">
         <header className="flex items-center justify-between gap-4 rounded-full border border-white/10 bg-white/[0.04] px-4 py-3 shadow-[0_18px_70px_rgba(0,0,0,0.24)] backdrop-blur-xl">
           <a href="#top" className="premium-focus flex items-center gap-3 rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ai-cyan/70">
-            <span className="grid h-10 w-10 place-items-center rounded-full border border-ai-cyan/30 bg-ai-cyan/10 text-ai-cyan shadow-[0_0_24px_rgba(109,231,242,0.15)]">
+            <span className="grid h-10 w-10 place-items-center rounded-full border border-companion/40 bg-companion text-ink shadow-sm">
               <Sparkles size={19} />
             </span>
             <span>
@@ -105,7 +105,7 @@ export default function LoginPage() {
 
         <main id="top" className="grid flex-1 items-center gap-10 py-10 lg:grid-cols-[1.05fr_0.95fr] lg:py-14">
           <section className="animate-page">
-            <div className="inline-flex items-center gap-2 rounded-full border border-ai-cyan/20 bg-ai-cyan/10 px-3 py-1.5 text-xs font-bold text-ai-cyan shadow-[0_0_28px_rgba(109,231,242,0.10)]">
+            <div className="inline-flex items-center gap-2 rounded-full border border-companion/35 bg-companion-tint px-3 py-1.5 text-xs font-bold text-ink shadow-sm">
               <span className="h-1.5 w-1.5 rounded-full bg-ai-cyan" />
               Premium AI-powered learning management
             </div>
@@ -120,7 +120,7 @@ export default function LoginPage() {
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               <a
                 href="#access"
-                className="premium-focus inline-flex min-h-12 items-center justify-center gap-2 rounded-full border border-ai-cyan/30 bg-gradient-to-r from-ai-cyan/18 via-ai-violet/18 to-ai-rose/18 px-6 text-sm font-bold text-mist shadow-[0_0_34px_rgba(109,231,242,0.15)] outline-none hover:border-ai-cyan/60 focus-visible:ring-2 focus-visible:ring-ai-cyan/70"
+                className="premium-focus inline-flex min-h-12 items-center justify-center gap-2 rounded-full border border-companion bg-companion px-6 text-sm font-bold text-ink shadow-sm outline-none hover:border-ai-violet hover:bg-ai-violet focus-visible:ring-2 focus-visible:ring-ai-cyan/70"
               >
                 Enter workspace <ArrowRight size={17} />
               </a>
@@ -165,18 +165,18 @@ export default function LoginPage() {
                       onClick={() => setRole(option.role)}
                       className={`premium-focus rounded-2xl border p-4 text-left outline-none focus-visible:ring-2 focus-visible:ring-ai-cyan/70 ${
                         active
-                          ? 'border-ai-cyan/55 bg-ai-cyan/10 shadow-[0_0_30px_rgba(109,231,242,0.12)]'
+                          ? 'border-companion/60 bg-companion-tint shadow-sm'
                           : 'border-white/10 bg-white/[0.035] hover:border-white/24 hover:bg-white/[0.06]'
                       }`}
                     >
                       <div className="mb-4 flex items-center justify-between gap-3">
-                        <span className={`grid h-10 w-10 place-items-center rounded-2xl ${active ? 'bg-ai-cyan/16 text-ai-cyan' : 'bg-white/8 text-mist-muted'}`}>
+                        <span className={`grid h-10 w-10 place-items-center rounded-2xl ${active ? 'bg-white text-ink shadow-sm' : 'bg-white/8 text-mist-muted'}`}>
                           <Icon size={20} />
                         </span>
-                        <span className="font-mono text-[11px] font-semibold uppercase text-mist-soft">{option.path}</span>
+                        <span className={`font-mono text-[11px] font-semibold uppercase ${active ? 'text-slate-copy' : 'text-mist-soft'}`}>{option.path}</span>
                       </div>
-                      <p className="font-display text-base font-bold text-mist">{option.title}</p>
-                      <p className="mt-2 text-sm leading-6 text-mist-muted">{option.text}</p>
+                      <p className={`font-display text-base font-bold ${active ? 'text-ink' : 'text-mist'}`}>{option.title}</p>
+                      <p className={`mt-2 text-sm leading-6 ${active ? 'text-slate-copy' : 'text-mist-muted'}`}>{option.text}</p>
                     </button>
                   );
                 })}
@@ -260,7 +260,7 @@ export default function LoginPage() {
               The AI experience is designed to show boundaries, citations, confidence, and next learning actions, so support feels academic instead of generic.
             </p>
           </div>
-          <div className="rounded-3xl border border-ai-cyan/20 bg-gradient-to-br from-ai-cyan/10 via-ai-violet/10 to-ai-rose/8 p-5 shadow-[0_0_54px_rgba(109,231,242,0.08)]">
+          <div className="rounded-3xl border border-companion/25 bg-white/[0.055] p-5 shadow-premium">
             <div className="rounded-2xl border border-white/10 bg-night/70 p-5">
               <div className="flex items-start gap-3">
                 <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-ai-cyan/14 text-ai-cyan">
@@ -272,7 +272,7 @@ export default function LoginPage() {
                     I can explain this module using your course materials, flag uncertainty, and suggest a next practice step.
                   </p>
                   <div className="mt-4 flex flex-wrap gap-2">
-                    <span className="rounded-full border border-success/25 bg-success/10 px-3 py-1 font-mono text-[11px] font-semibold text-[#79E2A0]">Grounded</span>
+                    <span className="rounded-full border border-success/25 bg-success/10 px-3 py-1 font-mono text-[11px] font-semibold text-success">Grounded</span>
                     <span className="rounded-full border border-ai-cyan/25 bg-ai-cyan/10 px-3 py-1 font-mono text-[11px] font-semibold text-ai-cyan">3 sources</span>
                     <span className="rounded-full border border-white/10 bg-white/[0.05] px-3 py-1 font-mono text-[11px] font-semibold text-mist-muted">Next: quiz practice</span>
                   </div>

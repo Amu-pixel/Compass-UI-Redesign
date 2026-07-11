@@ -158,33 +158,33 @@ function AssessmentCommandPanel({ uploadState, finalState }: { uploadState: Uplo
   ];
 
   return (
-    <section className="mb-6 grid gap-5 lg:grid-cols-[1fr_360px]">
+    <section className="mb-6 grid gap-5 xl:grid-cols-[minmax(0,1fr)_320px]">
       <Card className="elite-surface overflow-hidden p-0">
         <div className="border-b border-line bg-paper px-5 py-4">
           <p className="font-mono text-xs font-semibold uppercase text-companion">Assessment command centre</p>
           <h2 className="mt-1 font-display text-2xl font-bold text-ink">Draft readiness, evidence, and next action</h2>
         </div>
-        <div className="grid gap-5 p-5 md:grid-cols-[220px_1fr]">
+        <div className="grid gap-5 p-5 xl:grid-cols-[260px_minmax(0,1fr)]">
           <div className="rounded-2xl border border-companion/20 bg-companion-tint p-5">
             <p className="font-mono text-[10px] font-bold uppercase text-companion">Readiness checklist</p>
-            <div className="mt-4 space-y-2">{readiness.map((item) => <p key={item} className="flex items-start gap-2 text-xs font-semibold leading-5 text-ink"><CheckCircle2 size={14} className="mt-0.5 shrink-0 text-companion" />{item}</p>)}</div>
+            <div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-1">{readiness.map((item) => <p key={item} className="flex min-w-0 items-start gap-2 whitespace-normal break-normal text-sm font-semibold leading-5 text-ink"><CheckCircle2 size={14} className="mt-0.5 shrink-0 text-companion" />{item}</p>)}</div>
             <p className="mt-4 text-xs leading-5 text-slate-copy">No predicted mark is generated. Lecturer marking remains the official assessment process.</p>
           </div>
           <div className="space-y-4">
-            <div className="grid gap-2 sm:grid-cols-4">
+            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
               {steps.map(([label, status], index) => (
-                <div key={label} className="rounded-xl border border-line bg-white p-3">
+                <div key={label} className="min-w-0 rounded-xl border border-line bg-white p-4">
                   <span className="font-mono text-[10px] font-bold text-slate-soft">0{index + 1}</span>
-                  <p className="mt-2 text-sm font-bold text-ink">{label}</p>
-                  <p className="mt-1 text-xs font-semibold text-companion">{status}</p>
+                  <p className="mt-2 whitespace-normal break-normal text-sm font-bold leading-5 text-ink">{label}</p>
+                  <p className="mt-1 whitespace-normal break-normal text-xs font-semibold text-companion">{status}</p>
                 </div>
               ))}
             </div>
             <div className="grid gap-3 md:grid-cols-3">
               {risks.map(([label, text]) => (
-                <div key={label} className="rounded-xl border border-warn/20 bg-warn-tint p-4">
-                  <p className="text-xs font-bold uppercase text-warn">{label}</p>
-                  <p className="mt-2 text-xs leading-5 text-slate-copy">{text}</p>
+                <div key={label} className="min-w-0 rounded-xl border border-warn/20 bg-warn-tint p-4">
+                  <p className="whitespace-normal break-normal text-xs font-bold uppercase text-warn">{label}</p>
+                  <p className="mt-2 whitespace-normal break-normal text-xs leading-5 text-slate-copy">{text}</p>
                 </div>
               ))}
             </div>
