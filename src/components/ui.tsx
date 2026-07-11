@@ -88,7 +88,7 @@ export function Card({
   return (
     <div
       className={cn(
-        'rounded-2xl border p-5 transition-colors',
+        'status-lift min-w-0 break-words rounded-2xl border p-5 transition-colors',
         variant === 'default' && 'border-line bg-white text-ink shadow-sm',
         variant === 'dark' && 'border-line-dark bg-night-panel text-mist shadow-premium',
         variant === 'ai' && 'border-ai-cyan/24 bg-gradient-to-br from-night-panel via-night-soft to-night text-mist shadow-[0_22px_70px_rgba(109,231,242,0.10)]',

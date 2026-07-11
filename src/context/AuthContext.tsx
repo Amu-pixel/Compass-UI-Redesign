@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { createContext, useContext, useMemo, useState, type ReactNode } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 
 export type Role = 'student' | 'lecturer';
@@ -19,14 +19,16 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 const storageKey = 'ai-learning-companion-user';
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-
-  useEffect(() => {
+  const [user, setUser] = useState<User | null>(() => {
     const stored = window.localStorage.getItem(storageKey);
-    if (stored) {
-      setUser(JSON.parse(stored) as User);
+    if (!stored) return null;
+    try {
+      return JSON.parse(stored) as User;
+    } catch {
+      window.localStorage.removeItem(storageKey);
+      return null;
     }
-  }, []);
+  });
 
   const value = useMemo(
     () => ({

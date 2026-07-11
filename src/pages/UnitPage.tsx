@@ -23,6 +23,7 @@ import {
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import ContactLecturerDialog from '../components/ContactLecturerDialog';
 import {
   aiResponses,
   announcements,
@@ -47,6 +48,7 @@ export default function UnitPage() {
   const [question, setQuestion] = useState('');
   const [showSupport, setShowSupport] = useState(false);
   const [toast, setToast] = useState('');
+  const [contactOpen, setContactOpen] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -147,6 +149,14 @@ export default function UnitPage() {
   return (
     <div className="animate-page mx-auto max-w-7xl px-5 py-6 sm:px-8">
       {toast && <Toast message={toast} />}
+      <ContactLecturerDialog
+        open={contactOpen}
+        onClose={() => setContactOpen(false)}
+        unitCode={unit.code}
+        unitTitle={unit.name}
+        context={`${unit.week} ${unit.topic}`}
+        defaultSubject={`${unit.code}: Question about ${unit.topic}`}
+      />
 
       {/* ── Course identity header ── */}
       <div className="mb-5 overflow-hidden rounded-[24px] border border-line bg-white shadow-sm">
@@ -205,6 +215,10 @@ export default function UnitPage() {
               <Button to="/demo/learn" variant="ai" size="sm">
                 <Brain size={14} />
                 AI Tutor
+              </Button>
+              <Button variant="secondary" size="sm" onClick={() => setContactOpen(true)}>
+                <GraduationCap size={14} />
+                Contact lecturer
               </Button>
             </div>
           </div>

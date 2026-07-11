@@ -1,5 +1,5 @@
 import { BarChart3, BookOpen, Brain, ClipboardCheck, Database, Home, LogOut, ShieldCheck, Sparkles } from 'lucide-react';
-import { NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { unit } from '../data/mockData';
 import { cn } from '../utils/classNames';
@@ -23,8 +23,12 @@ const lecturerNav = [
 export default function AppLayout() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const isLecturer = user?.role === 'lecturer';
   const nav = isLecturer ? lecturerNav : studentNav;
+  const currentNav = [...nav].sort((a, b) => b.to.length - a.to.length).find((item) => location.pathname === item.to || location.pathname.startsWith(`${item.to}/`));
+  const contextLabel = isLecturer ? 'CIVL301 / Teaching operations' : `${unit.code} / ${unit.week} / ${unit.topic}`;
+  const pageTitle = currentNav?.label ?? (isLecturer ? 'Lecturer workspace' : 'Student workspace');
 
   function signOut() {
     logout();
@@ -34,14 +38,18 @@ export default function AppLayout() {
   return (
     <div className="min-h-screen bg-paper text-ink">
       <aside className="fixed left-0 top-0 z-30 hidden h-screen w-72 border-r border-white/10 bg-[#0B0D12] px-4 py-5 text-white lg:block">
-        <div className="mb-8 flex items-center gap-3 px-2">
-          <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-ai-cyan/30 bg-ai-cyan/10 text-ai-cyan shadow-[0_0_26px_rgba(109,231,242,0.12)]">
+        <div className="mb-7 flex items-center gap-3 px-2">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-ai-cyan/30 bg-ai-cyan/10 text-ai-cyan shadow-[0_0_26px_rgba(109,231,242,0.12)]">
             <Sparkles size={21} />
           </div>
           <div>
             <p className="font-display text-sm font-bold">Compass AI LMS</p>
             <p className="text-xs text-white/55">{isLecturer ? 'Lecturer workspace' : 'Student workspace'}</p>
           </div>
+        </div>
+        <div className="mb-5 rounded-xl border border-white/10 bg-white/[0.045] p-3">
+          <p className="font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-white/45">Current context</p>
+          <p className="mt-1 text-sm font-semibold leading-5 text-white">{contextLabel}</p>
         </div>
         <nav className="space-y-1">
           {nav.map((item) => (
@@ -51,37 +59,42 @@ export default function AppLayout() {
               end={item.end}
               className={({ isActive }) =>
                 cn(
-                  'flex items-center gap-3 rounded-2xl px-3 py-3 text-sm font-semibold transition',
-                  isActive ? 'bg-white text-ink' : 'text-white/66 hover:bg-white/10 hover:text-white',
+                  'nav-active-motion flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold outline-none transition focus-visible:ring-2 focus-visible:ring-ai-cyan/70',
+                  isActive ? 'bg-white text-ink shadow-sm' : 'text-white/66 hover:bg-white/10 hover:text-white',
                 )
               }
             >
-              <item.icon size={18} />
+              <item.icon size={18} aria-hidden="true" />
               {item.label}
             </NavLink>
           ))}
         </nav>
-        <button onClick={signOut} className="absolute bottom-5 left-4 right-4 flex items-center gap-2 rounded-2xl px-3 py-3 text-sm font-semibold text-white/66 hover:bg-white/10">
+        <button type="button" onClick={signOut} className="absolute bottom-5 left-4 right-4 flex items-center gap-2 rounded-xl px-3 py-3 text-sm font-semibold text-white/66 outline-none transition hover:bg-white/10 focus-visible:ring-2 focus-visible:ring-ai-cyan/70">
           <LogOut size={17} />
           Sign out
         </button>
       </aside>
 
-      <header className="sticky top-0 z-20 border-b border-line bg-white/92 px-5 py-4 backdrop-blur lg:ml-72 lg:px-8">
+      <header className="sticky top-0 z-20 border-b border-line bg-white/94 px-5 py-3 backdrop-blur lg:ml-72 lg:px-8">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4">
           <div>
             <p className="font-mono text-xs font-semibold uppercase tracking-wider text-slate-soft">
-              {isLecturer ? 'Lecturer / AI validation / Cohort insight' : `Courses / ${unit.name} / ${unit.week}`}
+              {contextLabel}
             </p>
-            <h1 className="font-display text-xl font-bold sm:text-2xl">{isLecturer ? `Hi ${user?.name || 'Lecturer'}, teaching workspace` : unit.name}</h1>
+            <h1 className="font-display text-xl font-bold sm:text-2xl">{pageTitle}</h1>
           </div>
-          <div className="hidden rounded-full border border-line bg-paper px-4 py-2 text-sm font-semibold text-slate-copy sm:block">
-            {isLecturer ? 'Lecturer only' : unit.code}
+          <div className="hidden items-center gap-3 sm:flex">
+            <div className="rounded-full border border-line bg-paper px-4 py-2 text-sm font-semibold text-slate-copy">
+              {isLecturer ? 'Lecturer only' : unit.code}
+            </div>
+            <div className="rounded-full border border-line bg-white px-4 py-2 text-sm font-semibold text-ink">
+              {user?.name}
+            </div>
           </div>
         </div>
       </header>
 
-      <main className="pb-24 lg:ml-72 lg:pb-10">
+      <main className="overflow-x-hidden pb-24 lg:ml-72 lg:pb-10">
         <Outlet />
       </main>
 
@@ -92,10 +105,10 @@ export default function AppLayout() {
             to={item.to}
             end={item.end}
             className={({ isActive }) =>
-              cn('flex flex-col items-center gap-1 rounded-xl px-1 py-2 text-[10px] font-semibold', isActive ? 'text-companion' : 'text-slate-soft')
+              cn('flex flex-col items-center gap-1 rounded-xl px-1 py-2 text-[10px] font-semibold outline-none focus-visible:ring-2 focus-visible:ring-ai-cyan/70', isActive ? 'bg-companion-tint text-companion' : 'text-slate-soft')
             }
           >
-            <item.icon size={17} />
+            <item.icon size={17} aria-hidden="true" />
             {item.label.split(' ')[0]}
           </NavLink>
         ))}

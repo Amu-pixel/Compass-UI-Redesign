@@ -1,20 +1,22 @@
 import {
   AlertTriangle,
-  BarChart3,
+  ArrowDownUp,
+  ArrowLeft,
   Brain,
   CheckCircle2,
   ClipboardCheck,
   Edit3,
   FileText,
-  Info,
-  Loader2,
+  History,
+  Mail,
+  RotateCcw,
+  Save,
+  Search,
   ShieldCheck,
   Sparkles,
-  TrendingUp,
-  Users,
   XCircle,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
   assignmentBrief,
   finalRubric,
@@ -23,447 +25,531 @@ import {
   sampleSubmission,
   unit,
 } from '../data/mockData';
-import { Badge, Button, Card, ConfidenceBadge, Toast } from '../components/ui';
+import { Badge, Button, Card, Toast } from '../components/ui';
+import PrepareMessageDialog from '../components/PrepareMessageDialog';
 import { cn } from '../utils/classNames';
 
-type Decision = '' | 'accepted' | 'edited' | 'overridden' | 'rejected';
+type Decision = '' | 'accepted' | 'edited' | 'overridden' | 'rejected' | 'revision' | 'draftSaved' | 'finalised';
+type QueueFilter = 'all' | 'draft' | 'final' | 'needs-review' | 'ready';
+type SortMode = 'priority' | 'time';
+
+type Submission = (typeof lecturerAssignmentView.finalSubmissions)[number] & {
+  id: string;
+  assignment: string;
+  type: 'Draft' | 'Final';
+  version: string;
+  reviewStatus: 'Ready' | 'AI recommendation' | 'Manual review' | 'Revision requested';
+  evidenceQuality: 'High' | 'Medium' | 'Concern';
+  risk: 'Low' | 'Medium' | 'High';
+  aiStatus: 'Guidance ready' | 'Needs lecturer check' | 'Insufficient evidence';
+  decisionStatus: string;
+  priority: number;
+};
+
+const queueRows: Submission[] = [
+  {
+    ...lecturerAssignmentView.finalSubmissions[0],
+    id: 'david-final',
+    assignment: assignmentBrief.title,
+    type: 'Final',
+    version: 'v3 final',
+    reviewStatus: 'Ready',
+    evidenceQuality: 'High',
+    risk: 'Low',
+    aiStatus: 'Guidance ready',
+    decisionStatus: 'Not finalised',
+    priority: 3,
+  },
+  {
+    ...lecturerAssignmentView.finalSubmissions[1],
+    id: 'amelia-final',
+    assignment: assignmentBrief.title,
+    type: 'Final',
+    version: 'v2 final',
+    reviewStatus: 'AI recommendation',
+    evidenceQuality: 'Medium',
+    risk: 'Medium',
+    aiStatus: 'Needs lecturer check',
+    decisionStatus: 'Feedback draft open',
+    priority: 2,
+  },
+  {
+    ...lecturerAssignmentView.finalSubmissions[2],
+    id: 'marcus-final',
+    assignment: assignmentBrief.title,
+    type: 'Final',
+    version: 'v1 final',
+    reviewStatus: 'Manual review',
+    evidenceQuality: 'Concern',
+    risk: 'High',
+    aiStatus: 'Insufficient evidence',
+    decisionStatus: 'Manual judgement required',
+    priority: 1,
+  },
+  {
+    student: 'Nadia Rahman',
+    file: 'CIVL301_Assignment2_NadiaRahman_Draft.pdf',
+    submitted: '17 Sep 2026, 9:18 am',
+    status: 'Lecturer review required',
+    id: 'nadia-draft',
+    assignment: assignmentBrief.title,
+    type: 'Draft',
+    version: 'v2 draft',
+    reviewStatus: 'Revision requested',
+    evidenceQuality: 'Medium',
+    risk: 'Medium',
+    aiStatus: 'Needs lecturer check',
+    decisionStatus: 'Revision requested',
+    priority: 2,
+  },
+];
+
+const submissionHistory = [
+  'Draft v1 uploaded 14 Sep 2026, 8:42 pm',
+  'Formative AI feedback generated 15 Sep 2026, 9:02 am',
+  'Draft v2 uploaded 17 Sep 2026, 9:18 am',
+  'Final version uploaded 18 Sep 2026, 4:42 pm',
+];
 
 export default function LecturerAssignmentsPage() {
   const [toast, setToast] = useState('');
-  const [selected, setSelected] = useState(lecturerAssignmentView.finalSubmissions[0]);
+  const [selected, setSelected] = useState<Submission>(queueRows[0]);
   const [decision, setDecision] = useState<Decision>('');
   const [editingFeedback, setEditingFeedback] = useState(false);
-  const [feedbackText, setFeedbackText] = useState('');
-  const [submitting, setSubmitting] = useState(false);
+  const [feedbackText, setFeedbackText] = useState('Your explanation of maximum bending moment is clear. Strengthen the final feedback by explicitly linking the signed shear area to the central moment peak and identifying one design implication.');
+  const [rubricFeedback, setRubricFeedback] = useState<Record<string, string>>(() => Object.fromEntries(rubric.map((item) => [item.title, item.improvement])));
+  const [saveState, setSaveState] = useState<'saved' | 'unsaved'>('saved');
+  const [auditHistory, setAuditHistory] = useState<string[]>(['Local session opened review workspace.']);
+  const [query, setQuery] = useState('');
+  const [filter, setFilter] = useState<QueueFilter>('all');
+  const [sortMode, setSortMode] = useState<SortMode>('priority');
+  const [messageOpen, setMessageOpen] = useState(false);
 
   function notify(message: string) {
     setToast(message);
     setTimeout(() => setToast(''), 2200);
   }
 
+  function record(action: string) {
+    setAuditHistory((items) => [`${new Date().toLocaleTimeString('en-AU', { hour: '2-digit', minute: '2-digit' })} - ${action}`, ...items].slice(0, 6));
+  }
+
+  function chooseSubmission(submission: Submission) {
+    setSelected(submission);
+    setDecision('');
+    setEditingFeedback(false);
+    setFeedbackText('Your explanation of maximum bending moment is clear. Strengthen the final feedback by explicitly linking the signed shear area to the central moment peak and identifying one design implication.');
+    setRubricFeedback(Object.fromEntries(rubric.map((item) => [item.title, item.improvement])));
+    setSaveState('saved');
+    record(`Opened ${submission.student} submission.`);
+  }
+
   function handleDecision(action: Decision, label: string) {
     if (action === 'edited') {
       setEditingFeedback(true);
+      setSaveState('unsaved');
+      record('Opened lecturer feedback editor.');
       return;
     }
-    setSubmitting(true);
-    setTimeout(() => {
-      setDecision(action);
-      setSubmitting(false);
-      notify(`${label} recorded for ${selected.student}`);
-    }, 900);
+    setDecision(action);
+    record(`${label} recorded locally for ${selected.student}.`);
+    notify(`${label} recorded for this local session.`);
   }
 
-  function submitEditedFeedback() {
+  function saveDraftFeedback() {
     if (!feedbackText.trim()) {
-      notify('Please enter your feedback before saving.');
+      notify('Feedback cannot be empty.');
       return;
     }
-    setSubmitting(true);
-    setTimeout(() => {
-      setDecision('edited');
-      setEditingFeedback(false);
-      setSubmitting(false);
-      notify(`Edited feedback saved for ${selected.student}`);
-    }, 900);
+    setDecision('draftSaved');
+    setSaveState('saved');
+    setEditingFeedback(false);
+    record(`Draft feedback saved for ${selected.student}.`);
   }
+
+  function updateRubricFeedback(key: string, value: string) {
+    setRubricFeedback((items) => ({ ...items, [key]: value }));
+    setSaveState('unsaved');
+  }
+
+  const filteredRows = useMemo(() => {
+    return queueRows
+      .filter((row) => {
+        const matchesQuery = `${row.student} ${row.assignment} ${row.file} ${row.reviewStatus}`.toLowerCase().includes(query.toLowerCase());
+        const matchesFilter =
+          filter === 'all' ||
+          (filter === 'draft' && row.type === 'Draft') ||
+          (filter === 'final' && row.type === 'Final') ||
+          (filter === 'needs-review' && (row.risk === 'High' || row.reviewStatus === 'Manual review')) ||
+          (filter === 'ready' && row.reviewStatus === 'Ready');
+        return matchesQuery && matchesFilter;
+      })
+      .sort((a, b) => sortMode === 'priority' ? a.priority - b.priority : b.submitted.localeCompare(a.submitted));
+  }, [filter, query, sortMode]);
 
   return (
     <div className="animate-page mx-auto max-w-7xl px-5 py-6 sm:px-8">
       {toast && <Toast message={toast} />}
+      <PrepareMessageDialog
+        open={messageOpen}
+        onClose={() => setMessageOpen(false)}
+        title="Prepare student message"
+        recipientLabel="Student"
+        recipientValue={selected.student}
+        unitCode={unit.code}
+        context={`${assignmentBrief.title} - ${selected.version} - ${selected.reviewStatus}`}
+        defaultSubject={`${unit.code}: Feedback clarification for ${assignmentBrief.title}`}
+        defaultMessage={`I am reviewing your ${selected.type.toLowerCase()} submission and need to clarify one point before feedback is finalised. Please revisit the evidence linked to your bending moment reasoning.`}
+      />
 
-      {/* ── Page header ── */}
       <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div>
-          <p className="font-mono text-xs font-semibold uppercase text-companion">
-            Lecturer workspace — {unit.code}
-          </p>
-          <h1 className="mt-1 font-display text-3xl font-bold text-ink">
-            Final submissions and AI recommendations
-          </h1>
-          <p className="mt-2 text-sm leading-6 text-slate-copy">
-            {assignmentBrief.title} · {lecturerAssignmentView.finalSubmissions.length} submissions
+          <p className="font-mono text-xs font-semibold uppercase tracking-[0.16em] text-companion">Lecturer workbench / Assignment queue</p>
+          <h1 className="mt-2 font-display text-3xl font-bold text-ink">High-volume review surface</h1>
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-copy">
+            Search, filter, select, and review submissions. AI guidance remains advisory until a lecturer saves or finalises feedback.
           </p>
         </div>
-        <ConfidenceBadge />
+        <Button to="/lecturer/review" variant="secondary"><InboxIcon />Review Queue</Button>
       </div>
 
-      {/* ── Cohort signals ── */}
-      <div className="mb-6 grid gap-4 sm:grid-cols-4">
+      <section className="mb-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4" aria-label="Assignment queue summary">
         {[
-          { icon: Users, label: 'Submissions', value: '3', sub: 'of 28 enrolled', tone: 'blue' },
-          { icon: CheckCircle2, label: 'Ready to mark', value: '1', sub: 'no flags', tone: 'green' },
-          { icon: Sparkles, label: 'AI recommended', value: '1', sub: 'review required', tone: 'purple' },
-          { icon: AlertTriangle, label: 'Lecturer action', value: '1', sub: 'manual review needed', tone: 'amber' },
-        ].map((stat) => (
-          <div
-            key={stat.label}
-            className="flex items-center gap-4 rounded-2xl border border-line bg-white p-4 shadow-sm"
-          >
-            <div
-              className={cn(
-                'flex h-10 w-10 shrink-0 items-center justify-center rounded-xl',
-                stat.tone === 'blue' && 'bg-companion-tint text-companion',
-                stat.tone === 'green' && 'bg-success-tint text-success',
-                stat.tone === 'purple' && 'bg-[#f3e8ff] text-ai-violet',
-                stat.tone === 'amber' && 'bg-warn-tint text-warn',
-              )}
-            >
-              <stat.icon size={18} />
+          ['Awaiting review', '4', 'Includes draft and final submissions', 'warning'],
+          ['Manual judgement', '1', 'Evidence concern or uncertainty', 'danger'],
+          ['Draft feedback open', '1', 'Quiet save state active', 'ai'],
+          ['Ready to finalise', '1', 'Lecturer decision still required', 'success'],
+        ].map(([label, value, detail, tone]) => (
+          <div key={label} className="rounded-xl border border-line bg-white p-4 shadow-sm">
+            <p className="font-mono text-[10px] font-bold uppercase text-slate-soft">{label}</p>
+            <div className="mt-2 flex items-end justify-between gap-3">
+              <p className="font-display text-3xl font-bold">{value}</p>
+              <Badge tone={tone as 'warning' | 'danger' | 'ai' | 'success'}>{tone}</Badge>
             </div>
-            <div>
-              <p className="font-display text-2xl font-bold text-ink">{stat.value}</p>
-              <p className="text-xs font-semibold text-slate-copy">{stat.label}</p>
-              <p className="text-xs text-slate-soft">{stat.sub}</p>
-            </div>
+            <p className="mt-2 text-xs leading-5 text-slate-copy">{detail}</p>
           </div>
         ))}
-      </div>
+      </section>
 
-      {/* ── Main layout ── */}
-      <div className="grid gap-5 xl:grid-cols-[300px_1fr]">
-        {/* Submission queue */}
-        <Card className="h-fit">
-          <p className="mb-4 font-mono text-xs font-semibold uppercase text-slate-soft">
-            Submission queue
-          </p>
-          <div className="space-y-3">
-            {lecturerAssignmentView.finalSubmissions.map((submission) => {
-              const isSelected = selected.file === submission.file;
-              return (
-                <button
-                  key={submission.file}
-                  type="button"
-                  aria-pressed={isSelected}
-                  onClick={() => {
-                    setSelected(submission);
-                    setDecision('');
-                    setEditingFeedback(false);
-                    setFeedbackText('');
-                  }}
-                  className={cn(
-                    'w-full rounded-xl border p-4 text-left transition',
-                    isSelected
-                      ? 'border-companion bg-companion-tint'
-                      : 'border-line hover:border-companion hover:bg-companion-tint/40',
-                  )}
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <p className="font-bold text-ink">{submission.student}</p>
-                    {submission.status === 'Ready for marking' && (
-                      <span className="shrink-0 rounded-full bg-success-tint px-2 py-0.5 font-mono text-[10px] font-bold text-success border border-success/20">
-                        Ready
-                      </span>
-                    )}
-                    {submission.status === 'AI recommendation generated' && (
-                      <span className="shrink-0 rounded-full bg-companion-tint px-2 py-0.5 font-mono text-[10px] font-bold text-companion border border-companion/20">
-                        AI rec.
-                      </span>
-                    )}
-                    {submission.status === 'Lecturer review required' && (
-                      <span className="shrink-0 rounded-full bg-warn-tint px-2 py-0.5 font-mono text-[10px] font-bold text-warn border border-warn/20">
-                        Review
-                      </span>
-                    )}
-                  </div>
-                  <p className="mt-1 text-xs text-slate-soft">{submission.file}</p>
-                  <p className="mt-1 font-mono text-[10px] font-semibold text-slate-soft">
-                    {submission.submitted}
-                  </p>
+      <div className="grid gap-5 xl:grid-cols-[minmax(0,1.05fr)_minmax(0,1.45fr)]">
+        <Card className="h-fit p-0">
+          <div className="border-b border-line p-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="font-mono text-xs font-bold uppercase text-slate-soft">Submission queue</p>
+                <h2 className="mt-1 font-display text-xl font-bold">Readable at cohort scale</h2>
+              </div>
+              <Button variant="ghost" size="sm" onClick={() => setSortMode(sortMode === 'priority' ? 'time' : 'priority')}>
+                <ArrowDownUp size={14} />Sort: {sortMode}
+              </Button>
+            </div>
+            <label className="mt-4 flex min-h-11 items-center gap-2 rounded-xl border border-line bg-paper px-3 text-sm">
+              <Search size={16} className="text-slate-soft" />
+              <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search student, file, status" aria-label="Search assignment queue" className="w-full bg-transparent outline-none" />
+            </label>
+            <div className="mt-3 flex flex-wrap gap-2" role="list" aria-label="Queue filters">
+              {[
+                ['all', 'All'],
+                ['final', 'Final'],
+                ['draft', 'Draft'],
+                ['needs-review', 'Needs review'],
+                ['ready', 'Ready'],
+              ].map(([id, label]) => (
+                <button key={id} type="button" aria-pressed={filter === id} onClick={() => setFilter(id as QueueFilter)} className={cn('rounded-full border px-3 py-1.5 text-xs font-bold transition', filter === id ? 'border-ink bg-ink text-white' : 'border-line bg-white text-slate-copy hover:border-companion')}>
+                  {label}
                 </button>
-              );
-            })}
-          </div>
-
-          {/* Cohort analytics CTA */}
-          <div className="mt-5 rounded-xl border border-dashed border-line bg-paper p-4">
-            <div className="flex items-center gap-2">
-              <BarChart3 size={15} className="text-companion" />
-              <p className="text-sm font-bold text-ink">Cohort signals</p>
-            </div>
-            <p className="mt-2 text-xs leading-5 text-slate-copy">
-              71% quiz accuracy on moment maxima. 42% of Week 4 questions relate to BMDs.
-            </p>
-            <button
-              type="button"
-              onClick={() => notify('Full cohort analytics are available in the Lecturer Dashboard.')}
-              className="mt-3 flex items-center gap-1.5 text-xs font-semibold text-companion hover:underline"
-            >
-              <TrendingUp size={12} /> View dashboard analytics
-            </button>
-          </div>
-        </Card>
-
-        {/* Review workspace */}
-        <section className="space-y-5">
-          {/* Selected submission header */}
-          <Card>
-            <div className="flex flex-wrap items-start justify-between gap-4">
-              <div>
-                <p className="font-mono text-xs font-semibold uppercase text-slate-soft">
-                  Selected submission
-                </p>
-                <h2 className="mt-1 font-display text-2xl font-bold text-ink">{selected.student}</h2>
-                <p className="mt-1 text-sm text-slate-copy">
-                  {selected.file} · submitted {selected.submitted}
-                </p>
-              </div>
-              <div className="flex flex-wrap items-center gap-2">
-                {decision === 'accepted' && (
-                  <Badge tone="success">Recommendation accepted</Badge>
-                )}
-                {decision === 'edited' && (
-                  <Badge tone="success">Feedback edited and saved</Badge>
-                )}
-                {decision === 'overridden' && (
-                  <Badge tone="warning">Overridden by lecturer</Badge>
-                )}
-                {decision === 'rejected' && (
-                  <Badge tone="danger">Recommendation rejected</Badge>
-                )}
-                {decision === '' && (
-                  <span className="rounded-full border border-success/20 bg-success-tint px-4 py-2 text-sm font-bold text-success">
-                    {selected.status}
-                  </span>
-                )}
-              </div>
-            </div>
-          </Card>
-
-          {/* Brief + excerpt */}
-          <div className="grid gap-5 lg:grid-cols-2">
-            <Card>
-              <div className="flex items-center gap-3">
-                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-cardinal-tint text-cardinal">
-                  <FileText size={16} />
-                </div>
-                <h3 className="font-display text-lg font-bold">Assignment brief</h3>
-              </div>
-              <p className="mt-4 font-semibold text-ink">{assignmentBrief.title}</p>
-              <p className="mt-3 text-sm leading-6 text-slate-copy">{assignmentBrief.task}</p>
-            </Card>
-            <Card>
-              <div className="flex items-center gap-3">
-                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-companion-tint text-companion">
-                  <ClipboardCheck size={16} />
-                </div>
-                <h3 className="font-display text-lg font-bold">Student draft excerpt</h3>
-              </div>
-              <div className="mt-4 rounded-xl bg-paper p-4">
-                <p className="text-sm leading-7 italic text-slate-copy">
-                  "{sampleSubmission.excerpt}"
-                </p>
-              </div>
-            </Card>
-          </div>
-
-          {/* AI formative feedback context */}
-          <Card>
-            <div className="flex items-center gap-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-companion-tint text-companion">
-                <ShieldCheck size={16} />
-              </div>
-              <div>
-                <h3 className="font-display text-lg font-bold">AI formative feedback — student received</h3>
-                <p className="text-xs text-slate-soft">Context only — not a mark · lecturer judgement required</p>
-              </div>
-            </div>
-            <div className="mt-4 grid gap-3 sm:grid-cols-2">
-              {rubric.map((item) => (
-                <div key={item.title} className="rounded-xl bg-paper p-4">
-                  <p className="font-bold text-ink">{item.title}</p>
-                  <p className="mt-2 text-sm leading-6 text-slate-copy">{item.improvement}</p>
-                  <p className="mt-2 font-mono text-xs font-semibold text-companion">
-                    Direction: {item.direction}
-                  </p>
-                </div>
               ))}
             </div>
-          </Card>
+          </div>
 
-          {/* AI recommendation */}
-          <Card>
-            <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
-              <div className="flex items-center gap-3">
-                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-companion-tint text-companion">
-                  <Brain size={16} />
-                </div>
-                <div>
-                  <h3 className="font-display text-lg font-bold">Lecturer-side AI recommendation</h3>
-                  <p className="text-xs text-slate-soft">AI-generated · requires lecturer review and approval</p>
-                </div>
-              </div>
-              {/* Confidence indicator */}
-              <div className="flex items-center gap-2 rounded-xl border border-success/20 bg-success-tint px-3 py-2">
-                <div className="h-2 w-2 rounded-full bg-success" />
-                <p className="font-mono text-[11px] font-semibold text-success">High confidence</p>
+          <div className="max-w-full overflow-x-auto">
+            <table className="min-w-[920px] w-full border-collapse text-left text-sm">
+              <thead className="border-b border-line bg-paper text-xs uppercase text-slate-soft">
+                <tr>
+                  <th className="px-4 py-3">Student</th>
+                  <th className="px-4 py-3">Type</th>
+                  <th className="px-4 py-3">Submitted</th>
+                  <th className="px-4 py-3">Review</th>
+                  <th className="px-4 py-3">Evidence</th>
+                  <th className="px-4 py-3">Risk</th>
+                  <th className="px-4 py-3">Next</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-line">
+                {filteredRows.map((submission) => {
+                  const active = selected.id === submission.id;
+                  return (
+                    <tr key={submission.id} className={cn('queue-row-select transition', active ? 'bg-companion-tint/70' : 'hover:bg-paper')}>
+                      <td className="px-4 py-4">
+                        <button type="button" onClick={() => chooseSubmission(submission)} className="text-left font-bold text-ink hover:text-companion">
+                          {submission.student}
+                        </button>
+                        <p className="mt-1 text-xs text-slate-soft">{submission.file}</p>
+                      </td>
+                      <td className="px-4 py-4"><Badge tone="neutral">{submission.type}</Badge></td>
+                      <td className="px-4 py-4 text-slate-copy">{submission.submitted}</td>
+                      <td className="px-4 py-4">{submission.reviewStatus}</td>
+                      <td className="px-4 py-4">{submission.evidenceQuality}</td>
+                      <td className="px-4 py-4"><Badge tone={submission.risk === 'High' ? 'danger' : submission.risk === 'Medium' ? 'warning' : 'success'}>{submission.risk}</Badge></td>
+                      <td className="px-4 py-4"><Button size="sm" variant={active ? 'primary' : 'secondary'} onClick={() => chooseSubmission(submission)}>Open submission</Button></td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+          {filteredRows.length === 0 && (
+            <div className="p-5">
+              <div className="rounded-xl border border-dashed border-line bg-paper p-5 text-sm text-slate-copy">
+                No submissions match this filter. Clear search or choose All to return to the queue.
               </div>
             </div>
+          )}
+        </Card>
 
-            {/* Recommendation box */}
-            <div className="rounded-xl border border-companion/20 bg-companion-tint p-5">
-              <div className="flex items-start gap-2">
-                <Sparkles size={15} className="mt-0.5 shrink-0 text-companion" />
-                <p className="text-sm leading-7 text-slate-copy">
-                  {lecturerAssignmentView.aiRecommendation}
-                </p>
-              </div>
-            </div>
-
-            {/* Evidence / marking guide */}
-            <div className="mt-4 rounded-xl bg-paper p-5">
-              <div className="flex items-center gap-2">
-                <Info size={14} className="text-slate-soft" />
-                <p className="font-semibold text-ink">Marking guide context</p>
-              </div>
-              <p className="mt-2 text-sm leading-6 text-slate-copy">
-                {lecturerAssignmentView.markingGuide}
-              </p>
-            </div>
-
-            {/* Final rubric — shown after acceptance */}
-            {decision === 'accepted' && (
-              <div className="mt-5">
-                <p className="mb-3 font-mono text-xs font-semibold uppercase text-slate-soft">
-                  Accepted — suggested grade breakdown
-                </p>
-                <div className="grid gap-3 sm:grid-cols-2">
-                  {finalRubric.map((item) => (
-                    <div key={item.criterion} className="rounded-xl border border-success/20 bg-success-tint p-4">
-                      <p className="font-bold text-ink">{item.criterion}</p>
-                      <p className="mt-1 font-mono text-lg font-bold text-success">{item.score}</p>
-                      <p className="mt-2 text-xs leading-5 text-slate-copy">{item.comment}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Feedback editor */}
-            {editingFeedback && (
-              <div className="mt-5">
-                <p className="mb-2 font-mono text-xs font-semibold uppercase text-slate-soft">
-                  Edit feedback
-                </p>
-                <textarea
-                  value={feedbackText}
-                  onChange={(e) => setFeedbackText(e.target.value)}
-                  rows={5}
-                  aria-label="Edit student feedback"
-                  placeholder="Enter your feedback for this student…"
-                  className="w-full rounded-xl border border-line bg-paper p-4 text-sm leading-6 text-ink outline-none focus:border-companion"
-                />
-                <div className="mt-3 flex gap-2">
-                  {submitting ? (
-                    <div className="flex items-center gap-2 text-sm font-semibold text-companion">
-                      <Loader2 size={15} className="animate-spin" /> Saving…
-                    </div>
-                  ) : (
-                    <>
-                      <Button onClick={submitEditedFeedback}>
-                        <CheckCircle2 size={15} /> Save feedback
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        onClick={() => setEditingFeedback(false)}
-                      >
-                        Cancel
-                      </Button>
-                    </>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Human review boundary */}
-            <div className="mt-5 flex items-start gap-3 rounded-xl border border-warn/20 bg-warn-tint p-4">
-              <AlertTriangle size={16} className="mt-0.5 shrink-0 text-warn" />
-              <div>
-                <p className="text-sm font-bold text-ink">Human review boundary</p>
-                <p className="mt-1 text-xs leading-5 text-slate-copy">
-                  The AI recommendation is advisory only. All grades, feedback, and decisions are the
-                  sole responsibility of the lecturer. Accept, edit, or override below.
-                </p>
-              </div>
-            </div>
-
-            {/* Decision actions */}
-            {!editingFeedback && decision === '' && (
-              <div className="mt-5">
-                <p className="mb-3 font-mono text-xs font-semibold uppercase text-slate-soft">
-                  Lecturer decision
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {submitting ? (
-                    <div className="flex items-center gap-2 text-sm font-semibold text-companion">
-                      <Loader2 size={15} className="animate-spin" /> Recording decision…
-                    </div>
-                  ) : (
-                    <>
-                      <Button
-                        variant="primary"
-                        onClick={() => handleDecision('accepted', 'Accept recommendation')}
-                      >
-                        <CheckCircle2 size={15} /> Accept recommendation
-                      </Button>
-                      <Button
-                        variant="secondary"
-                        onClick={() => handleDecision('edited', 'Edit feedback')}
-                      >
-                        <Edit3 size={15} /> Edit feedback
-                      </Button>
-                      <Button
-                        variant="secondary"
-                        onClick={() => handleDecision('overridden', 'Override')}
-                      >
-                        <ShieldCheck size={15} /> Override
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        onClick={() => handleDecision('rejected', 'Reject recommendation')}
-                      >
-                        <XCircle size={15} /> Reject
-                      </Button>
-                    </>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Post-decision actions */}
-            {decision !== '' && !editingFeedback && (
-              <div className="mt-5 flex flex-wrap items-center gap-3">
-                <div
-                  className={cn(
-                    'flex items-center gap-2 rounded-full px-4 py-2 text-sm font-bold',
-                    decision === 'accepted' &&
-                      'border border-success/20 bg-success-tint text-success',
-                    decision === 'edited' &&
-                      'border border-success/20 bg-success-tint text-success',
-                    decision === 'overridden' &&
-                      'border border-warn/20 bg-warn-tint text-warn',
-                    decision === 'rejected' &&
-                      'border border-danger/20 bg-danger-tint text-danger',
-                  )}
-                >
-                  <CheckCircle2 size={15} />
-                  Decision recorded
-                </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    setDecision('');
-                    setFeedbackText('');
-                  }}
-                >
-                  Reset decision
-                </Button>
-              </div>
-            )}
-          </Card>
-        </section>
+        <ReviewWorkbench
+          selected={selected}
+          decision={decision}
+          editingFeedback={editingFeedback}
+          feedbackText={feedbackText}
+          rubricFeedback={rubricFeedback}
+          saveState={saveState}
+          auditHistory={auditHistory}
+          onBackToQueue={() => document.querySelector<HTMLDivElement>('main')?.scrollTo({ top: 0, behavior: 'smooth' })}
+          onDecision={handleDecision}
+          onFeedbackChange={(value) => { setFeedbackText(value); setSaveState('unsaved'); }}
+          onRubricFeedbackChange={updateRubricFeedback}
+          onSaveDraft={saveDraftFeedback}
+          onCancelEdit={() => { setEditingFeedback(false); setSaveState('saved'); }}
+          onReset={() => {
+            setDecision('');
+            setEditingFeedback(false);
+            setSaveState('saved');
+            record(`Decision reset for ${selected.student}.`);
+          }}
+          onContact={() => setMessageOpen(true)}
+        />
       </div>
     </div>
+  );
+}
+
+function InboxIcon() {
+  return <ClipboardCheck size={15} />;
+}
+
+function ReviewWorkbench({
+  selected,
+  decision,
+  editingFeedback,
+  feedbackText,
+  rubricFeedback,
+  saveState,
+  auditHistory,
+  onBackToQueue,
+  onDecision,
+  onFeedbackChange,
+  onRubricFeedbackChange,
+  onSaveDraft,
+  onCancelEdit,
+  onReset,
+  onContact,
+}: {
+  selected: Submission;
+  decision: Decision;
+  editingFeedback: boolean;
+  feedbackText: string;
+  rubricFeedback: Record<string, string>;
+  saveState: 'saved' | 'unsaved';
+  auditHistory: string[];
+  onBackToQueue: () => void;
+  onDecision: (action: Decision, label: string) => void;
+  onFeedbackChange: (value: string) => void;
+  onRubricFeedbackChange: (key: string, value: string) => void;
+  onSaveDraft: () => void;
+  onCancelEdit: () => void;
+  onReset: () => void;
+  onContact: () => void;
+}) {
+  return (
+    <section className="space-y-5" aria-label="Lecturer review workbench">
+      <Card className="p-0">
+        <div className="flex flex-wrap items-start justify-between gap-4 border-b border-line p-5">
+          <div>
+            <p className="font-mono text-xs font-bold uppercase text-companion">Selected submission</p>
+            <h2 className="mt-1 font-display text-2xl font-bold">{selected.student}</h2>
+            <p className="mt-1 text-sm text-slate-copy">{selected.assignment} - {selected.version} - submitted {selected.submitted}</p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Badge tone={selected.risk === 'High' ? 'danger' : selected.risk === 'Medium' ? 'warning' : 'success'}>{selected.risk} support signal</Badge>
+            <Badge tone={saveState === 'saved' ? 'success' : 'warning'}>{saveState === 'saved' ? 'Saved' : 'Unsaved changes'}</Badge>
+          </div>
+        </div>
+        <div className="grid gap-4 p-5 md:grid-cols-4">
+          {[
+            ['Course/unit', `${unit.code} ${unit.name}`],
+            ['Assignment', selected.assignment],
+            ['Draft/final', `${selected.type} - ${selected.version}`],
+            ['Decision state', decision ? decision.replace(/([A-Z])/g, ' $1') : selected.decisionStatus],
+          ].map(([label, value]) => (
+            <div key={label} className="rounded-xl border border-line bg-paper p-3">
+              <p className="font-mono text-[10px] font-bold uppercase text-slate-soft">{label}</p>
+              <p className="mt-1 text-sm font-bold leading-5">{value}</p>
+            </div>
+          ))}
+        </div>
+      </Card>
+
+      <div className="grid gap-5 lg:grid-cols-2">
+        <Card>
+          <div className="flex items-center gap-3">
+            <FileText size={18} className="text-cardinal" />
+            <h3 className="font-display text-lg font-bold">Assignment requirements</h3>
+          </div>
+          <p className="mt-4 font-semibold">{assignmentBrief.title}</p>
+          <p className="mt-3 text-sm leading-6 text-slate-copy">{assignmentBrief.task}</p>
+          <div className="mt-4 grid gap-2">
+            {assignmentBrief.requirements.map((item) => (
+              <p key={item} className="flex gap-2 text-sm leading-6 text-slate-copy"><CheckCircle2 size={15} className="mt-1 shrink-0 text-success" />{item}</p>
+            ))}
+          </div>
+        </Card>
+        <Card>
+          <div className="flex items-center gap-3">
+            <History size={18} className="text-companion" />
+            <h3 className="font-display text-lg font-bold">Submission history</h3>
+          </div>
+          <div className="mt-4 space-y-2">
+            {submissionHistory.map((item) => (
+              <p key={item} className="rounded-xl border border-line bg-paper p-3 text-sm font-semibold text-slate-copy">{item}</p>
+            ))}
+          </div>
+        </Card>
+      </div>
+
+      <Card>
+        <div className="flex items-center gap-3">
+          <ClipboardCheck size={18} className="text-companion" />
+          <h3 className="font-display text-lg font-bold">Student submission preview</h3>
+        </div>
+        <div className="mt-4 rounded-xl border border-line bg-paper p-4">
+          <p className="font-mono text-[10px] font-bold uppercase text-slate-soft">Excerpt from {selected.file}</p>
+          <p className="mt-3 text-sm leading-7 italic text-slate-copy">"{sampleSubmission.excerpt}"</p>
+        </div>
+        <div className="mt-4 grid gap-3 md:grid-cols-3">
+          {['Evidence: labelled BMD and SFD', 'Citation: Week 4 Slide 18 referenced', 'Gap: design implication needs stronger reasoning'].map((item) => (
+            <div key={item} className="rounded-xl border border-line bg-white p-3 text-sm font-semibold text-slate-copy">{item}</div>
+          ))}
+        </div>
+      </Card>
+
+      <Card className="border-companion/20 bg-companion-tint/60">
+        <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <Brain size={18} className="text-companion" />
+            <div>
+              <h3 className="font-display text-lg font-bold">AI-assisted recommendation</h3>
+              <p className="text-xs text-slate-soft">Guidance only. No AI output becomes final lecturer feedback automatically.</p>
+            </div>
+          </div>
+          <Badge tone={selected.risk === 'High' ? 'warning' : 'success'}>{selected.risk === 'High' ? 'Manual review required' : 'Confidence: clear but advisory'}</Badge>
+        </div>
+        <p className="rounded-xl border border-companion/20 bg-white p-4 text-sm leading-7 text-slate-copy">{lecturerAssignmentView.aiRecommendation}</p>
+        <div className="mt-4 grid gap-3 md:grid-cols-3">
+          {[
+            ['Supporting evidence', 'Draft excerpt, rubric criteria, and Week 4 source alignment.'],
+            ['Source basis', lecturerAssignmentView.markingGuide],
+            ['Uncertainty', selected.risk === 'High' ? 'Sign convention and evidence trace require human review.' : 'No grade should be inferred from this guidance.'],
+          ].map(([label, value]) => (
+            <div key={label} className="rounded-xl border border-companion/15 bg-white/80 p-3">
+              <p className="font-mono text-[10px] font-bold uppercase text-companion">{label}</p>
+              <p className="mt-2 text-xs leading-5 text-slate-copy">{value}</p>
+            </div>
+          ))}
+        </div>
+      </Card>
+
+      <Card>
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h3 className="font-display text-lg font-bold">Lecturer feedback editor</h3>
+            <p className="mt-1 text-sm text-slate-copy">Routine saves use the quiet saved indicator above.</p>
+          </div>
+          <Button variant="secondary" size="sm" onClick={() => onDecision('edited', 'Edit recommendation')}><Edit3 size={14} />Edit feedback</Button>
+        </div>
+        {editingFeedback ? (
+          <div className="mt-4 space-y-4">
+            {rubric.map((item) => (
+              <label key={item.title} className="block text-sm font-bold text-ink">
+                {item.title}
+                <textarea value={rubricFeedback[item.title]} onChange={(event) => onRubricFeedbackChange(item.title, event.target.value)} className="mt-2 min-h-20 w-full rounded-xl border border-line bg-paper p-3 text-sm font-normal leading-6 outline-none focus:border-companion focus:ring-2 focus:ring-companion/20" />
+              </label>
+            ))}
+            <label className="block text-sm font-bold text-ink">
+              Overall comments
+              <textarea value={feedbackText} onChange={(event) => onFeedbackChange(event.target.value)} rows={5} className="mt-2 w-full rounded-xl border border-line bg-paper p-4 text-sm font-normal leading-6 outline-none focus:border-companion focus:ring-2 focus:ring-companion/20" />
+            </label>
+            <div className="flex flex-wrap gap-2">
+              <Button onClick={onSaveDraft}><Save size={15} />Save draft feedback</Button>
+              <Button variant="secondary" onClick={() => onDecision('finalised', 'Finalise feedback')}><CheckCircle2 size={15} />Finalise feedback</Button>
+              <Button variant="ghost" onClick={onCancelEdit}>Cancel</Button>
+            </div>
+          </div>
+        ) : (
+          <div className="mt-4 rounded-xl border border-line bg-paper p-4">
+            <p className="text-sm leading-7 text-slate-copy">{feedbackText}</p>
+          </div>
+        )}
+      </Card>
+
+      {decision === 'accepted' && (
+        <Card className="border-success/20 bg-success-tint">
+          <p className="font-mono text-xs font-bold uppercase text-success">Accepted recommendation - suggested breakdown visible for review</p>
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            {finalRubric.map((item) => (
+              <div key={item.criterion} className="rounded-xl border border-success/20 bg-white p-4">
+                <p className="font-bold">{item.criterion}</p>
+                <p className="mt-1 font-mono text-lg font-bold text-success">{item.score}</p>
+                <p className="mt-2 text-xs leading-5 text-slate-copy">{item.comment}</p>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
+
+      <Card>
+        <div className="flex items-start gap-3 rounded-xl border border-warn/20 bg-warn-tint p-4">
+          <AlertTriangle size={16} className="mt-0.5 shrink-0 text-warn" />
+          <div>
+            <p className="text-sm font-bold text-ink">Human decision boundary</p>
+            <p className="mt-1 text-xs leading-5 text-slate-copy">Accept, edit, override, reject, request revision, save draft, and finalise are lecturer actions. The AI never releases grades or sends feedback.</p>
+          </div>
+        </div>
+        <div className="mt-5 flex flex-wrap gap-2">
+          <Button onClick={() => onDecision('accepted', 'Accept recommendation')}><CheckCircle2 size={15} />Accept recommendation</Button>
+          <Button variant="secondary" onClick={() => onDecision('edited', 'Edit recommendation')}><Edit3 size={15} />Edit recommendation</Button>
+          <Button variant="secondary" onClick={() => onDecision('overridden', 'Override')}><ShieldCheck size={15} />Override</Button>
+          <Button variant="secondary" onClick={() => onDecision('revision', 'Request revision')}><RotateCcw size={15} />Request revision</Button>
+          <Button variant="ghost" onClick={() => onDecision('rejected', 'Reject recommendation')}><XCircle size={15} />Reject</Button>
+          <Button variant="secondary" onClick={onContact}><Mail size={15} />Contact student</Button>
+          <Button variant="ghost" onClick={onReset}><ArrowLeft size={15} />Reset decision</Button>
+        </div>
+        {decision && (
+          <p role="status" className="mt-4 rounded-xl border border-success/20 bg-success-tint px-4 py-3 text-sm font-bold text-success">
+            Current local decision: {decision.replace(/([A-Z])/g, ' $1')}. This has not been sent to a server.
+          </p>
+        )}
+      </Card>
+
+      <Card>
+        <h3 className="flex items-center gap-2 font-display text-lg font-bold"><History size={17} />Audit/history</h3>
+        <div className="mt-4 space-y-2">
+          {auditHistory.map((item) => (
+            <p key={item} className="rounded-xl border border-line bg-paper p-3 text-xs font-semibold text-slate-copy">{item}</p>
+          ))}
+        </div>
+        <Button className="mt-4" variant="ghost" size="sm" onClick={onBackToQueue}>Return to queue</Button>
+      </Card>
+    </section>
   );
 }

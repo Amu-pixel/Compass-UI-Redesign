@@ -102,6 +102,12 @@ button:disabled {
     linear-gradient(135deg, rgba(28, 34, 48, 0.94), rgba(15, 17, 23, 0.98));
 }
 
+.elite-surface {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(250, 250, 248, 0.98));
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.85) inset, 0 18px 52px rgba(15, 17, 23, 0.08);
+}
+
 .ai-gradient-text {
   background: linear-gradient(135deg, #6de7f2, #8b5cf6 58%, #f0abfc);
   -webkit-background-clip: text;
@@ -117,12 +123,69 @@ button:disabled {
   transform: translateY(-1px);
 }
 
+.premium-focus:active {
+  transform: translateY(0) scale(.99);
+}
+
+.status-lift {
+  transition: transform 220ms var(--ease-premium), box-shadow 220ms var(--ease-premium), border-color 220ms var(--ease-premium);
+}
+
+.status-lift:hover {
+  border-color: rgba(52, 84, 209, .32);
+  box-shadow: 0 16px 42px rgba(15, 17, 23, .10);
+  transform: translateY(-2px);
+}
+
 .animate-page {
   animation: pageIn 520ms var(--ease-premium) both;
 }
 
 .animate-ai-response {
   animation: aiResponseIn 420ms var(--ease-premium) both;
+}
+
+.modal-enter {
+  animation: modalEnter 260ms var(--ease-premium) both;
+}
+
+.timeline-enter {
+  animation: timelineEnter 380ms var(--ease-premium) both;
+}
+
+.panel-reveal {
+  animation: panelReveal 240ms var(--ease-premium) both;
+}
+
+.queue-row-select {
+  transition: background-color 120ms var(--ease-premium), box-shadow 120ms var(--ease-premium), transform 120ms var(--ease-premium);
+}
+
+.queue-row-select:hover {
+  transform: translateY(-1px);
+}
+
+.nav-active-motion {
+  position: relative;
+}
+
+.nav-active-motion::before {
+  background: currentColor;
+  border-radius: 999px;
+  content: "";
+  height: 18px;
+  left: 4px;
+  opacity: 0;
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%) scaleY(.65);
+  transition: opacity 150ms var(--ease-premium), transform 150ms var(--ease-premium);
+  width: 3px;
+}
+
+.nav-active-motion[aria-current="page"]::before {
+  opacity: .8;
+  transform: translateY(-50%) scaleY(1);
 }
 
 .skeleton-premium {
@@ -138,6 +201,41 @@ button:disabled {
   inset: 0;
   position: absolute;
   transform: translateX(-100%);
+}
+
+.method-panel-enter {
+  animation: methodPanelIn 360ms var(--ease-premium) both;
+}
+
+.equation-highlight {
+  animation: equationFocus 900ms var(--ease-premium) both;
+}
+
+.diagram-draw {
+  animation: diagramDraw 900ms var(--ease-premium) both;
+}
+
+.diagram-pulse {
+  animation: diagramPulse 1.6s ease-in-out infinite;
+}
+
+.comic-bubble {
+  animation: comicBubbleIn 420ms cubic-bezier(.2, .85, .28, 1.18) both;
+}
+
+.media-range {
+  cursor: pointer;
+  min-height: 24px;
+}
+
+.media-range::-webkit-slider-runnable-track {
+  background: rgba(255, 255, 255, 0.16);
+  border-radius: 999px;
+  height: 4px;
+}
+
+.media-range::-webkit-slider-thumb {
+  margin-top: -5px;
 }
 
 @keyframes fadeUp {
@@ -160,6 +258,46 @@ button:disabled {
   to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
+@keyframes modalEnter {
+  from { opacity: 0; transform: translateY(10px) scale(.985); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes timelineEnter {
+  from { opacity: 0; transform: translateX(-8px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes panelReveal {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 @keyframes shimmer {
   to { transform: translateX(100%); }
+}
+
+@keyframes methodPanelIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes equationFocus {
+  from { opacity: 0; transform: scale(.97); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes diagramDraw {
+  from { stroke-dasharray: 1; stroke-dashoffset: 1; opacity: .25; }
+  to { stroke-dasharray: 1; stroke-dashoffset: 0; opacity: 1; }
+}
+
+@keyframes diagramPulse {
+  0%, 100% { opacity: .65; transform: scale(.92); transform-origin: center; }
+  50% { opacity: 1; transform: scale(1.08); transform-origin: center; }
+}
+
+@keyframes comicBubbleIn {
+  from { opacity: 0; transform: translateY(12px) scale(.96); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
 }

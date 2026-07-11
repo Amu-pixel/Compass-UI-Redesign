@@ -4,11 +4,15 @@ node_modules/
 
 # Build output
 dist/
+.vite/
 
 # Local TypeScript build info
 *.tsbuildinfo
 _tmp_*
 dev-server*.log
+dev-*.log
+dev-*.err
+*.log
 
 # OS and editor artifacts
 desktop.ini
