@@ -134,7 +134,7 @@ export default function LearningPage() {
       : 'simple';
   });
   const [contextExpanded, setContextExpanded] = useState(false);
-  const [tutorCollapsed, setTutorCollapsed] = useState(false);
+  const [tutorCollapsed, setTutorCollapsed] = useState(true);
   const [toast, setToast] = useState('');
   const [contactOpen, setContactOpen] = useState(false);
   const [contactReason, setContactReason] = useState('Concept clarification');
@@ -324,7 +324,7 @@ export default function LearningPage() {
     ?? defaultLearningActions;
 
   return (
-    <div className="animate-page mx-auto grid max-w-7xl gap-5 px-5 py-6 sm:px-8 xl:grid-cols-[1fr_340px]">
+    <div className="animate-page mx-auto grid min-w-0 max-w-7xl gap-5 px-5 py-6 sm:px-8 xl:grid-cols-[minmax(0,1fr)_320px]">
       {/* Toast */}
       {toast && (
         <div
@@ -347,10 +347,10 @@ export default function LearningPage() {
         defaultMessage={contactQuestion}
       />
 
-      <section className="space-y-4">
+      <section className="min-w-0 space-y-4">
         {/* Context bar */}
         <div className="overflow-hidden rounded-2xl border border-line bg-white shadow-sm">
-          <div className="flex items-center justify-between gap-3 px-5 py-4">
+          <div className="flex flex-wrap items-start justify-between gap-3 px-5 py-4">
             <div className="min-w-0">
               <nav aria-label="Breadcrumb" className="flex flex-wrap items-center gap-1.5">
                 <Link to="/courses" className="font-mono text-xs font-semibold text-slate-soft hover:text-companion">
@@ -363,11 +363,12 @@ export default function LearningPage() {
                 <span className="text-xs text-slate-soft">/</span>
                 <span className="font-mono text-xs font-semibold text-companion">{unit.week}</span>
                 <span className="text-xs text-slate-soft">/</span>
-                <span className="font-mono text-xs font-semibold text-ink">AI Tutor</span>
+                <span className="font-mono text-xs font-semibold text-ink">Lesson workspace</span>
               </nav>
-              <h1 className="mt-2 font-display text-2xl font-bold leading-tight text-ink sm:text-3xl">
-                AI Tutor - {unit.topic}
+              <h1 className="mt-2 break-words font-display text-xl font-bold leading-tight text-ink sm:text-3xl">
+                {unit.topic}
               </h1>
+              <p className="mt-1 text-sm leading-6 text-slate-copy">Objective: use shear area to construct and explain a bending moment diagram.</p>
             </div>
             <div className="flex shrink-0 flex-col items-end gap-2">
               <ConfidenceBadge />
@@ -426,7 +427,7 @@ export default function LearningPage() {
           </span>
           <span className="hidden h-3.5 w-px bg-line sm:block" aria-hidden="true" />
           <span className="text-xs font-semibold text-slate-copy">Use shear area to construct moment</span>
-          <span className="ml-auto flex items-center gap-2 text-xs font-semibold text-slate-copy">
+          <span className="flex w-full items-center gap-2 text-xs font-semibold text-slate-copy sm:ml-auto sm:w-auto">
             <span className="text-slate-soft">Progress</span>
             <span className="h-1.5 w-24 overflow-hidden rounded-full bg-paper-dim" role="progressbar" aria-valuenow={68} aria-valuemin={0} aria-valuemax={100} aria-label="Course progress">
               <span className="block h-full w-[68%] rounded-full bg-companion" />
@@ -435,13 +436,13 @@ export default function LearningPage() {
           </span>
         </div>
 
-        <AcademicLessonCanvas onNotify={notify} onAsk={sendMessage} />
-
         <LearningExperienceStudio
           selectedMethod={selectedMethod}
           onSelect={selectMethod}
           onAsk={sendMessage}
         />
+
+        <AcademicLessonCanvas onNotify={notify} onAsk={sendMessage} />
 
         {/* Conversation area */}
         <div className="overflow-hidden rounded-2xl border border-line bg-white shadow-sm">
@@ -604,7 +605,7 @@ export default function LearningPage() {
       </section>
 
       {/* Right sidebar */}
-      <aside className="space-y-4">
+      <aside className="min-w-0 space-y-4">
         {/* Quick actions */}
         <div className="rounded-2xl border border-line bg-white p-5 shadow-sm">
           <div className="mb-4 flex items-center gap-2">

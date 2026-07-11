@@ -29,7 +29,7 @@ export default function CoursesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-night text-mist">
+    <div className="min-h-screen bg-paper text-ink">
       {toast && <Toast message={toast} />}
       <aside className="fixed left-0 top-0 hidden h-screen w-72 border-r border-white/10 bg-night p-5 text-white lg:block">
         <div className="flex items-center gap-3">
@@ -82,79 +82,89 @@ export default function CoursesPage() {
       </aside>
 
       <main className="lg:ml-72">
-        <header className="border-b border-white/10 bg-night/92 px-5 py-5 backdrop-blur sm:px-8">
+        <header className="border-b border-line bg-paper/95 px-5 py-4 backdrop-blur sm:px-8">
           <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4">
             <div>
-              <p className="font-mono text-xs font-semibold uppercase tracking-[0.16em] text-ai-cyan">Student dashboard</p>
-              <h1 className="mt-2 font-display text-4xl font-bold text-mist">Good to see you, {user?.name || 'David'}.</h1>
-              <p className="mt-2 max-w-2xl text-sm leading-6 text-mist-muted">Your courses, modules, AI Tutor, assignments, resources, and progress are organized around the next best learning action.</p>
+              <p className="font-mono text-xs font-semibold uppercase tracking-[0.16em] text-companion">Semester 2, 2026</p>
+              <h1 className="mt-1 font-display text-2xl font-bold text-ink sm:text-3xl">Good to see you, {user?.name || 'David'}.</h1>
+              <p className="mt-1 max-w-2xl text-sm leading-6 text-slate-copy">Continue the current module, then prepare the next assessment checkpoint.</p>
             </div>
             <ConfidenceBadge />
           </div>
         </header>
 
         <section className="mx-auto max-w-7xl px-5 py-6 sm:px-8">
-          <div className="grid gap-5 xl:grid-cols-[1.1fr_0.9fr]">
-            <div className="rounded-[28px] border border-companion/35 bg-night-panel p-6 shadow-premium">
-              <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="grid gap-5 xl:grid-cols-12">
+            <div className="rounded-[28px] border border-line bg-white p-6 shadow-sm xl:col-span-8">
+              <div className="flex flex-wrap items-start justify-between gap-5">
                 <div>
                   <Badge tone="ai">Next action</Badge>
-                  <h2 className="mt-4 font-display text-3xl font-bold text-mist">Continue Week 4: Bending Moment Diagrams</h2>
-                  <p className="mt-3 max-w-2xl text-sm leading-7 text-mist-muted">Resume Structural Analysis 301, then ask the AI Tutor to check your reasoning before the draft reflection checkpoint.</p>
+                  <h2 className="mt-4 font-display text-3xl font-bold text-ink">Continue Week 4: Bending Moment Diagrams</h2>
+                  <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-copy">Resume Structural Analysis 301. Last activity: Slide 18, shear area creates moment change.</p>
                 </div>
-                <div className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-right">
-                  <p className="font-mono text-xs font-semibold uppercase text-mist-soft">Learning momentum</p>
-                  <p className="mt-1 font-display text-3xl font-bold text-mist">68%</p>
+                <div className="rounded-2xl border border-line bg-paper px-4 py-3 text-right">
+                  <p className="font-mono text-xs font-semibold uppercase text-slate-soft">Progress</p>
+                  <p className="mt-1 font-display text-3xl font-bold text-ink">68%</p>
+                  <p className="text-xs text-slate-soft">About 24 min left</p>
                 </div>
               </div>
+              <div className="mt-6 h-2 overflow-hidden rounded-full bg-paper-dim" role="progressbar" aria-label="Current unit progress" aria-valuemin={0} aria-valuemax={100} aria-valuenow={68}>
+                <div className="h-full w-[68%] rounded-full bg-companion" />
+              </div>
               <div className="mt-6 flex flex-wrap gap-3">
-                <Button to="/demo" variant="ai">
-                  Resume module <ArrowRight size={17} />
+                <Button to="/demo" variant="primary">
+                  Continue learning <ArrowRight size={17} />
                 </Button>
-                <Button to="/demo/learn" variant="secondary" className="border-white/15 bg-white/[0.06] text-mist hover:bg-white/[0.1]">
-                  <Brain size={17} /> Open AI Tutor
+                <Button to="/demo/learn?method=practice" variant="secondary">
+                  <Brain size={17} /> Practise concept
                 </Button>
               </div>
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-3 xl:grid-cols-1">
+            <div className="rounded-[28px] border border-line bg-white p-5 shadow-sm xl:col-span-4">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="font-mono text-xs font-semibold uppercase text-companion">Upcoming priorities</p>
+                  <h2 className="mt-1 font-display text-xl font-bold text-ink">What is due next</h2>
+                </div>
+                <FileCheck2 className="text-companion" size={22} />
+              </div>
+              <div className="mt-5 space-y-3">
               <Link
                 to="/demo/assessment"
-                className="premium-focus rounded-3xl border border-white/10 bg-white/[0.045] p-5 text-left outline-none hover:border-companion/45 focus-visible:ring-2 focus-visible:ring-ai-cyan/70"
+                className="premium-focus block rounded-2xl border border-companion/25 bg-companion-tint p-4 text-left outline-none hover:border-companion/50 focus-visible:ring-2 focus-visible:ring-ai-cyan/70"
               >
-                <FileCheck2 className="text-ai-cyan" size={20} />
-                <p className="mt-4 font-display text-lg font-bold text-mist">Assignments</p>
-                <p className="mt-2 text-sm leading-6 text-mist-muted">Draft reflection due Monday</p>
+                <p className="text-sm font-bold text-ink">Assignment 2 draft reflection</p>
+                <p className="mt-1 text-xs leading-5 text-slate-copy">Due Monday 9 am. Draft not reviewed.</p>
               </Link>
               <button
                 type="button"
                 onClick={() => notify('Resources are available from your enrolled course pages.')}
-                className="premium-focus rounded-3xl border border-white/10 bg-white/[0.045] p-5 text-left outline-none hover:border-companion/45 focus-visible:ring-2 focus-visible:ring-ai-cyan/70"
+                className="premium-focus block w-full rounded-2xl border border-line bg-paper p-4 text-left outline-none hover:border-companion/45 focus-visible:ring-2 focus-visible:ring-ai-cyan/70"
               >
-                <LibraryBig className="text-ai-cyan" size={20} />
-                <p className="mt-4 font-display text-lg font-bold text-mist">Resources</p>
-                <p className="mt-2 text-sm leading-6 text-mist-muted">Week 4 slides connected</p>
+                <p className="text-sm font-bold text-ink">Week 4 slides connected</p>
+                <p className="mt-1 text-xs leading-5 text-slate-copy">Use Slide 18 before practice.</p>
               </button>
               <button
                 type="button"
                 onClick={() => notify('Progress tracking is available from your enrolled course pages.')}
-                className="premium-focus rounded-3xl border border-white/10 bg-white/[0.045] p-5 text-left outline-none hover:border-companion/45 focus-visible:ring-2 focus-visible:ring-ai-cyan/70"
+                className="premium-focus block w-full rounded-2xl border border-line bg-paper p-4 text-left outline-none hover:border-companion/45 focus-visible:ring-2 focus-visible:ring-ai-cyan/70"
               >
-                <BarChart3 className="text-ai-cyan" size={20} />
-                <p className="mt-4 font-display text-lg font-bold text-mist">Progress</p>
-                <p className="mt-2 text-sm leading-6 text-mist-muted">3 courses above pace</p>
+                <p className="text-sm font-bold text-ink">3 courses above pace</p>
+                <p className="mt-1 text-xs leading-5 text-slate-copy">Keep CIVL301 moving first.</p>
               </button>
+              </div>
             </div>
           </div>
 
-          <div className="mt-6 rounded-[24px] border border-white/10 bg-white/[0.045] p-4">
+          <div className="mt-6 rounded-[24px] border border-line bg-white p-4 shadow-sm">
             <div className="grid gap-3 md:grid-cols-[1fr_auto_auto]">
-              <label className="flex min-h-12 items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.06] px-4">
-                <Search size={18} className="text-mist-soft" />
+              <label className="flex min-h-12 items-center gap-3 rounded-2xl border border-line bg-paper px-4">
+                <Search size={18} className="text-slate-soft" />
                 <input
                   value={query}
                   onChange={(event) => setQuery(event.target.value)}
-                  className="min-w-0 flex-1 bg-transparent text-sm text-mist outline-none placeholder:text-mist-soft"
+                  className="min-w-0 flex-1 bg-transparent text-sm text-ink outline-none placeholder:text-slate-soft"
                   placeholder="Search your courses"
                   aria-label="Search your courses"
                 />
@@ -162,7 +172,7 @@ export default function CoursesPage() {
               <button
                 type="button"
                 onClick={() => notify('Current courses filter is already applied.')}
-                className="premium-focus flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-white/10 px-4 text-sm font-bold text-mist hover:border-ai-cyan/40"
+                className="premium-focus flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-line px-4 text-sm font-bold text-ink hover:border-companion"
               >
                 <Filter size={17} />
                 Current courses
@@ -170,7 +180,7 @@ export default function CoursesPage() {
               <button
                 type="button"
                 onClick={() => notify('Semester selection is prepared for the full LMS catalogue.')}
-                className="premium-focus flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-white/10 px-4 text-sm font-bold text-mist hover:border-ai-cyan/40"
+                className="premium-focus flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-line px-4 text-sm font-bold text-ink hover:border-companion"
               >
                 <CalendarDays size={17} />
                 Semester 2, 2026
@@ -179,8 +189,8 @@ export default function CoursesPage() {
           </div>
 
           <div className="mb-4 mt-8 flex items-center justify-between">
-            <h2 className="font-display text-2xl font-bold text-mist">Enrolled courses</h2>
-            <p className="font-mono text-xs font-semibold uppercase text-mist-soft">{filteredCourses.length} courses</p>
+            <h2 className="font-display text-2xl font-bold text-ink">Current units</h2>
+            <p className="font-mono text-xs font-semibold uppercase text-slate-soft">{filteredCourses.length} courses</p>
           </div>
 
           {filteredCourses.length === 0 ? (
@@ -194,27 +204,27 @@ export default function CoursesPage() {
             <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
               {filteredCourses.map((course) => (
                 <Link key={course.code} to="/demo" className="group rounded-[28px] outline-none focus-visible:ring-2 focus-visible:ring-ai-cyan/70">
-                  <article className="h-full overflow-hidden rounded-[28px] border border-white/10 bg-white/[0.055] transition group-hover:-translate-y-1 group-hover:border-companion/45 group-hover:shadow-[0_24px_70px_rgba(0,0,0,0.28)]">
-                    <div className="relative h-32" style={{ background: course.image }}>
-                      <div className="absolute left-4 top-4 rounded-full bg-night/75 px-3 py-1 font-mono text-xs font-bold text-mist backdrop-blur">{course.code}</div>
-                      <div className="absolute bottom-4 right-4 flex h-11 w-11 items-center justify-center rounded-2xl bg-white/15 text-white backdrop-blur">
+                  <article className="h-full overflow-hidden rounded-[24px] border border-line bg-white shadow-sm transition group-hover:-translate-y-1 group-hover:border-companion/45">
+                    <div className="relative h-20 border-b border-companion/35 bg-night">
+                      <div className="absolute left-4 top-4 rounded-full border border-white/12 bg-white/10 px-3 py-1 font-mono text-xs font-bold text-mist">{course.code}</div>
+                      <div className="absolute bottom-4 right-4 flex h-10 w-10 items-center justify-center rounded-2xl border border-white/12 bg-white/10 text-companion">
                         <GraduationCap size={22} />
                       </div>
                     </div>
                     <div className="p-5">
                       <Badge tone="ai">AI Tutor aware</Badge>
-                      <h3 className="mt-4 font-display text-xl font-bold text-mist">{course.title}</h3>
-                      <p className="mt-2 text-sm text-mist-muted">{course.lecturer}</p>
+                      <h3 className="mt-4 font-display text-xl font-bold text-ink">{course.title}</h3>
+                      <p className="mt-2 text-sm text-slate-copy">{course.lecturer}</p>
                       <div className="mt-5">
-                        <div className="mb-2 flex justify-between text-xs font-bold text-mist-muted">
+                        <div className="mb-2 flex justify-between text-xs font-bold text-slate-copy">
                           <span>Progress</span>
                           <span>{course.progress}%</span>
                         </div>
-                        <div className="h-2 rounded-full bg-white/10">
+                         <div className="h-2 rounded-full bg-paper-dim">
                           <div className="h-2 rounded-full bg-companion" style={{ width: `${course.progress}%` }} />
                         </div>
                       </div>
-                      <p className="mt-4 rounded-2xl border border-white/10 bg-white/[0.05] p-3 text-sm font-semibold leading-5 text-mist-muted">{course.nextAssessment}</p>
+                      <p className="mt-4 rounded-2xl border border-line bg-paper p-3 text-sm font-semibold leading-5 text-slate-copy">{course.nextAssessment}</p>
                     </div>
                   </article>
                 </Link>

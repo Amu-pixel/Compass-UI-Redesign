@@ -694,19 +694,19 @@ export function LearningExperienceStudio({ selectedMethod, onSelect, onAsk }: St
   }, [selectedMethod]);
 
   return (
-    <section className="learning-studio elite-surface overflow-hidden rounded-2xl border border-line bg-white shadow-sm" aria-labelledby="studio-title">
+    <section className="learning-studio elite-surface min-w-0 overflow-hidden rounded-2xl border border-line bg-white shadow-sm" aria-labelledby="studio-title">
       <div className="border-b border-line bg-paper px-5 py-5 sm:px-6">
         <div className="flex flex-wrap items-end justify-between gap-4">
-          <div>
+          <div className="min-w-0">
             <p className="font-mono text-[11px] font-bold uppercase tracking-[0.14em] text-companion">Learning Method Studio</p>
-            <h2 id="studio-title" className="mt-2 font-display text-2xl font-bold text-ink">Choose the experience that fits the task</h2>
+            <h2 id="studio-title" className="mt-2 break-words font-display text-xl font-bold leading-tight text-ink sm:text-2xl">Choose the experience that fits the task</h2>
           </div>
           <Badge tone="ai">Grounded in Week 4</Badge>
         </div>
-        <div className="mt-5 grid gap-3 xl:grid-cols-3" role="tablist" aria-label="Learning methods">
+        <div className="mt-5 grid min-w-0 gap-3 xl:grid-cols-3" role="tablist" aria-label="Learning methods">
           {methodGroups.map((group) => (
-            <div key={group.title} className="rounded-xl border border-line bg-white p-3">
-              <div className="mb-3 flex items-baseline justify-between gap-3">
+            <div key={group.title} className="min-w-0 rounded-xl border border-line bg-white p-3">
+              <div className="mb-3 flex flex-wrap items-baseline justify-between gap-3">
                 <p className="font-display text-sm font-bold text-ink">{group.title}</p>
                 <p className="text-[11px] font-semibold text-slate-soft">{group.purpose}</p>
               </div>
@@ -724,11 +724,11 @@ export function LearningExperienceStudio({ selectedMethod, onSelect, onAsk }: St
                       aria-controls={`method-panel-${id}`}
                       onClick={() => onSelect(id)}
                       className={cn(
-                        'premium-focus group min-h-16 rounded-lg border px-3 py-2.5 text-left outline-none transition duration-150 focus-visible:ring-2 focus-visible:ring-ai-cyan/70',
+                        'premium-focus group min-h-16 min-w-0 rounded-lg border px-3 py-2.5 text-left outline-none transition duration-150 focus-visible:ring-2 focus-visible:ring-ai-cyan/70',
                         active ? 'border-ink bg-ink text-white shadow-sm' : 'border-line bg-paper text-ink hover:border-companion/45 hover:bg-companion-tint/60',
                       )}
                     >
-                      <span className="flex items-center gap-2 text-sm font-bold"><Icon size={15} className={active ? 'text-ai-cyan' : 'text-companion'} />{option.label}</span>
+                      <span className="flex min-w-0 items-center gap-2 text-sm font-bold"><Icon size={15} className={active ? 'text-ai-cyan' : 'text-companion'} /> <span className="min-w-0 break-words">{option.label}</span></span>
                       <span className={cn('mt-1 block text-xs leading-5', active ? 'text-white/68' : 'text-slate-soft')}>{option.description}</span>
                     </button>
                   );

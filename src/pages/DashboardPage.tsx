@@ -149,6 +149,7 @@ export default function DashboardPage({ initialTab = 'overview' }: { initialTab?
   }, [initialTab]);
 
   const pendingCount = useMemo(() => queueItems.filter((item) => item.status !== 'resolved').length, [queueItems]);
+  const queueMode = active === 'queue';
 
   return (
     <div className="animate-page min-h-[calc(100vh-88px)] bg-paper px-5 py-6 text-ink sm:px-8">
@@ -170,9 +171,11 @@ export default function DashboardPage({ initialTab = 'overview' }: { initialTab?
         <div className="mb-5 grid gap-4 xl:grid-cols-[1fr_360px]">
           <div>
             <p className="font-mono text-xs font-semibold uppercase tracking-[0.16em] text-companion">Lecturer workbench / {unit.code}</p>
-            <h1 className="mt-2 font-display text-3xl font-bold leading-tight text-ink sm:text-4xl">Teaching operations for today</h1>
+            <h1 className="mt-2 font-display text-3xl font-bold leading-tight text-ink sm:text-4xl">{queueMode ? 'Review queue workbench' : 'Teaching operations for today'}</h1>
             <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-copy">
-              Decisions, review pressure, cohort learning gaps, and source validation for {unit.name}. AI remains advisory; lecturer judgement is the final authority.
+              {queueMode
+                ? `Prioritise submissions requiring human judgement for ${unit.name}. AI guidance remains advisory and never finalises feedback.`
+                : `Decisions, review pressure, cohort learning gaps, and source validation for ${unit.name}. AI remains advisory; lecturer judgement is the final authority.`}
             </p>
           </div>
           <Card className="h-fit border-companion/20 bg-companion-tint">
@@ -186,14 +189,14 @@ export default function DashboardPage({ initialTab = 'overview' }: { initialTab?
           </Card>
         </div>
 
-        <section className="mb-5 grid gap-4 lg:grid-cols-3" aria-label="Teaching priorities">
+        {!queueMode && <section className="mb-5 grid gap-4 xl:grid-cols-3" aria-label="Teaching priorities">
           {teachingPriorities.map((item) => (
-            <Card key={item.title} className={cn('p-4', item.tone === 'danger' && 'border-danger/25', item.tone === 'warning' && 'border-warn/25', item.tone === 'ai' && 'border-companion/25')}>
+            <Card key={item.title} className={cn('p-4', item.tone === 'danger' && 'border-danger/25 xl:col-span-2 xl:p-5', item.tone === 'warning' && 'border-warn/25', item.tone === 'ai' && 'border-companion/25')}>
               <div className="flex items-start justify-between gap-3">
                 <Badge tone={item.tone === 'danger' ? 'danger' : item.tone === 'warning' ? 'warning' : 'ai'}>{item.label}</Badge>
                 <span className="font-mono text-[10px] font-bold uppercase text-slate-soft">Today</span>
               </div>
-              <h2 className="mt-3 font-display text-lg font-bold text-ink">{item.title}</h2>
+              <h2 className={cn('mt-3 font-display font-bold text-ink', item.tone === 'danger' ? 'text-2xl leading-tight' : 'text-lg')}>{item.title}</h2>
               <p className="mt-2 text-sm leading-6 text-slate-copy">{item.detail}</p>
               {item.to ? (
                 <Link to={item.to} className="mt-4 inline-flex items-center gap-1 text-sm font-bold text-companion hover:underline">{item.action}<ArrowRight size={14} /></Link>
@@ -202,9 +205,9 @@ export default function DashboardPage({ initialTab = 'overview' }: { initialTab?
               )}
             </Card>
           ))}
-        </section>
+        </section>}
 
-        <div className="mb-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4" aria-label="Review workload">
+        {!queueMode && <div className="mb-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4" aria-label="Review workload">
           {workloadRows.map((item) => (
             <div key={item.label} className="rounded-xl border border-line bg-white p-4 shadow-sm">
               <p className="font-mono text-[10px] font-bold uppercase text-slate-soft">{item.label}</p>
@@ -215,7 +218,13 @@ export default function DashboardPage({ initialTab = 'overview' }: { initialTab?
               <p className="mt-2 text-xs leading-5 text-slate-copy">{item.detail}</p>
             </div>
           ))}
-        </div>
+        </div>}
+
+        {queueMode && (
+          <div className="mb-5">
+            <QueueSection items={queueItems} updateStatus={updateQueueStatus} editing={editing} setEditing={setEditing} answer={answer} setAnswer={setAnswer} notify={notify} />
+          </div>
+        )}
 
         <div className="grid gap-2 overflow-x-auto rounded-xl border border-line bg-white p-2 shadow-sm md:grid-cols-4" role="tablist" aria-label="Lecturer workbench sections">
           {sections.map(({ id, title, detail, icon: Icon }) => (
@@ -239,7 +248,7 @@ export default function DashboardPage({ initialTab = 'overview' }: { initialTab?
           ))}
         </div>
 
-        <div className="mt-5">
+        {!queueMode && <div className="mt-5">
           {active === 'overview' && <OverviewSection onMessage={() => setMessageDialog('student')} />}
           {active === 'workload' && <WorkloadSection />}
           {active === 'gaps' && <GapsSection />}
@@ -247,8 +256,7 @@ export default function DashboardPage({ initialTab = 'overview' }: { initialTab?
           {active === 'actions' && <RecommendationsSection notify={notify} onAnnouncement={() => setMessageDialog('cohort')} />}
           {active === 'report' && <ReportSection />}
           {active === 'setup' && <SetupSection notify={notify} />}
-          {active === 'queue' && <QueueSection items={queueItems} updateStatus={updateQueueStatus} editing={editing} setEditing={setEditing} answer={answer} setAnswer={setAnswer} notify={notify} />}
-        </div>
+        </div>}
       </div>
     </div>
   );
@@ -441,8 +449,31 @@ function QueueSection({
             </div>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="min-w-[920px] w-full border-collapse text-left text-sm">
+          <>
+          <div className="grid gap-3 p-4 xl:hidden">
+            {activeItems.map((item) => (
+              <div key={item.id} className="rounded-2xl border border-line bg-paper p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="font-bold text-ink">{item.student}</p>
+                    <p className="mt-1 text-xs text-slate-soft">{item.type} - {item.age}</p>
+                  </div>
+                  <Badge tone={item.priority === 'Urgent' ? 'danger' : item.priority === 'High' ? 'warning' : 'neutral'}>{item.priority}</Badge>
+                </div>
+                <p className="mt-3 text-sm leading-6 text-slate-copy">{item.reason}</p>
+                <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+                  <p className="rounded-xl border border-line bg-white p-2"><span className="block font-mono uppercase text-slate-soft">Confidence</span><strong>{item.confidence}</strong></p>
+                  <p className="rounded-xl border border-line bg-white p-2"><span className="block font-mono uppercase text-slate-soft">Status</span><strong className="capitalize">{item.status.replace('-', ' ')}</strong></p>
+                </div>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <Button size="sm" variant="secondary" to="/lecturer/assignments">Open</Button>
+                  <Button size="sm" variant="ghost" onClick={() => updateStatus(item.id, 'resolved')}>Resolve</Button>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="hidden overflow-x-auto xl:block">
+            <table className="min-w-[840px] w-full border-collapse text-left text-sm">
               <thead className="border-b border-line bg-paper text-xs uppercase text-slate-soft">
                 <tr>
                   <th className="px-4 py-3">Priority</th>
@@ -474,6 +505,7 @@ function QueueSection({
               </tbody>
             </table>
           </div>
+          </>
         )}
       </Card>
 
