@@ -24,19 +24,20 @@ import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import ContactLecturerDialog from '../components/ContactLecturerDialog';
+import { SupportEscalationActions, SupportRequestDialog } from '../components/SupportEscalationActions';
 import {
   aiResponses,
   announcements,
   quickActions,
   slides,
-  supportPathways,
   unit,
   unitTabs,
 } from '../data/mockData';
 import { Badge, Button, Card, ChatBubble, ConfidenceBadge, LoadingPill, Tabs, Toast } from '../components/ui';
+import { buildTutorResponse, isConfusionEscalationIntent, type SupportEscalationId } from '../data/learningTutor';
 import { cn } from '../utils/classNames';
 
-type Message = { role: string; text: string; source?: string };
+type Message = { role: string; text: string; source?: string; supportEscalation?: boolean; supportSeed?: string };
 
 export default function UnitPage() {
   const { user } = useAuth();
@@ -49,13 +50,18 @@ export default function UnitPage() {
   const [showSupport, setShowSupport] = useState(false);
   const [toast, setToast] = useState('');
   const [contactOpen, setContactOpen] = useState(false);
+  const [contactQuestion, setContactQuestion] = useState('');
+  const [supportRequestType, setSupportRequestType] = useState<Exclude<SupportEscalationId, 'email'> | null>(null);
+  const [supportRequestSeed, setSupportRequestSeed] = useState('');
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const stored = window.localStorage.getItem('ailc-memory');
     if (stored) {
       try {
-        setMessages(JSON.parse(stored) as Message[]);
+        const parsed = JSON.parse(stored) as Message[];
+        setMessages(parsed);
+        setShowSupport(parsed.some((message) => message.supportEscalation));
       } catch {
         setMessages(getWelcomeMessage(user?.name));
       }
@@ -110,27 +116,24 @@ export default function UnitPage() {
   function submitQuestion() {
     if (!question.trim()) return;
     const incoming = question;
-    const low = incoming.toLowerCase();
     setQuestion('');
-    if (
-      low.includes('still confused') ||
-      low.includes("still don't understand") ||
-      low.includes('still do not understand') ||
-      low.includes('still stuck') ||
-      low.includes('confused')
-    ) {
+    if (isConfusionEscalationIntent(incoming)) {
+      const response = buildTutorResponse(incoming);
       setShowSupport(true);
       setMessages((items) => [
         ...items,
         { role: 'student', text: incoming },
         {
           role: 'ai',
-          text: 'Thanks for telling me. Since this is still unclear, I recommend moving into a support stream: group discussion to compare reasoning, 1-on-1 mentoring for study strategy, or a lecturer catch-up if the issue is about assessment expectations. Bring these questions: where does shear become moment, how do I identify maximum moment, and how can I explain my reasoning without getting an assessment answer?',
-          source: 'Week 4 Lecture Slides, Slide 18',
+          text: response.text,
+          source: response.source,
+          supportEscalation: true,
+          supportSeed: incoming,
         },
       ]);
       return;
     }
+    const low = incoming.toLowerCase();
     if (low.includes('internet') || low.includes('answer')) {
       setMessages((items) => [
         ...items,
@@ -146,6 +149,17 @@ export default function UnitPage() {
     ask('Explain this slide');
   }
 
+  function handleSupportEscalation(id: SupportEscalationId, seed?: string) {
+    const studentContext = seed?.trim() || `I am still confused about ${unit.topic}.`;
+    setSupportRequestSeed(studentContext);
+    if (id === 'email') {
+      setContactQuestion(`I am still confused about ${unit.topic}, especially around Slide ${currentSlide}.\n\nWhat I asked the AI Companion:\n${studentContext}\n\nCould you please help me understand where my reasoning is breaking down?`);
+      setContactOpen(true);
+      return;
+    }
+    setSupportRequestType(id);
+  }
+
   return (
     <div className="animate-page mx-auto max-w-7xl px-5 py-6 sm:px-8">
       {toast && <Toast message={toast} />}
@@ -156,6 +170,16 @@ export default function UnitPage() {
         unitTitle={unit.name}
         context={`${unit.week} ${unit.topic}`}
         defaultSubject={`${unit.code}: Question about ${unit.topic}`}
+        defaultMessage={contactQuestion}
+      />
+      <SupportRequestDialog
+        open={Boolean(supportRequestType)}
+        type={supportRequestType}
+        onClose={() => setSupportRequestType(null)}
+        unitCode={unit.code}
+        unitTitle={unit.name}
+        context={`${unit.week} ${unit.topic} - Slide ${currentSlide}`}
+        studentMessage={supportRequestSeed}
       />
 
       {/* ── Course identity header ── */}
@@ -270,7 +294,7 @@ export default function UnitPage() {
           onSelectWeek={selectLectureWeek}
           onAsk={ask}
           onSubmitQuestion={submitQuestion}
-          onSupportAction={(action) => ask(action)}
+          onSupportAction={handleSupportEscalation}
           chatEndRef={chatEndRef}
           onSetCurrentSlide={setCurrentSlide}
           onNotify={notify}
@@ -314,7 +338,7 @@ function UnitMaterialsTab({
   onSelectWeek: (index: number) => void;
   onAsk: (action: string) => void;
   onSubmitQuestion: () => void;
-  onSupportAction: (action: string) => void;
+  onSupportAction: (id: SupportEscalationId, seed?: string) => void;
   chatEndRef: React.RefObject<HTMLDivElement | null>;
   onSetCurrentSlide: React.Dispatch<React.SetStateAction<number>>;
   onNotify: (msg: string) => void;
@@ -465,7 +489,12 @@ function UnitMaterialsTab({
         {/* Chat area */}
         <div className="mt-4 max-h-[300px] space-y-3 overflow-y-auto rounded-xl bg-white/70 p-3">
           {messages.map((message, index) => (
-            <ChatBubble key={`${message.role}-${index}`} {...message} />
+            <div key={`${message.role}-${index}`} className="space-y-3">
+              <ChatBubble {...message} />
+              {message.supportEscalation && (
+                <SupportEscalationActions onSelect={(id) => onSupportAction(id, message.supportSeed)} />
+              )}
+            </div>
           ))}
           {loading && <LoadingPill label="Searching approved unit material" />}
           <div ref={chatEndRef} />
@@ -482,20 +511,8 @@ function UnitMaterialsTab({
               understand the topic.
             </p>
           ) : (
-            <div className="mt-2 grid gap-1.5">
-              {supportPathways.slice(0, 3).map((support) => (
-                <button
-                  key={support.name}
-                  type="button"
-                  onClick={() => onSupportAction('Prepare support questions for me')}
-                  className="rounded-lg bg-paper px-3 py-2 text-left text-xs font-semibold text-ink hover:bg-companion-tint"
-                >
-                  {support.name}
-                  <span className="block pt-0.5 font-normal leading-4 text-slate-soft">
-                    {support.detail}
-                  </span>
-                </button>
-              ))}
+            <div className="mt-2 grid gap-2">
+              <SupportEscalationActions onSelect={(id) => onSupportAction(id, 'I am still confused about the shear-to-moment relationship.')} />
               <div className="rounded-lg bg-companion-tint px-3 py-2 text-xs leading-5 text-slate-copy">
                 Bring: "Can you check my shear-to-moment link?", "Where should maximum moment
                 occur?", and "How can I explain this without an assessment answer?"

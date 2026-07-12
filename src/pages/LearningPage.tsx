@@ -23,14 +23,14 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import ContactLecturerDialog from '../components/ContactLecturerDialog';
+import { SupportEscalationActions, SupportRequestDialog } from '../components/SupportEscalationActions';
 import {
-  aiResponses,
   chatSeed,
   unit,
 } from '../data/mockData';
 import { Badge, Button, Card, ConfidenceBadge, LoadingPill } from '../components/ui';
 import { LearningExperienceStudio, learningMethodOptions, type LearningMethod } from '../components/LearningExperienceStudio';
-import { buildTutorResponse, type TutorAction, type TutorIntent } from '../data/learningTutor';
+import { buildTutorResponse, isConfusionEscalationIntent, type SupportEscalationId, type TutorAction, type TutorIntent } from '../data/learningTutor';
 import { cn } from '../utils/classNames';
 
 type MessageState = 'grounded' | 'uncertain' | 'unsupported' | 'escalated';
@@ -42,7 +42,25 @@ type Message = {
   intent?: TutorIntent;
   followUps?: Array<TutorAction | string>;
   pinned?: boolean;
+  supportEscalation?: boolean;
+  supportSeed?: string;
 };
+
+function readStoredMessages() {
+  if (typeof window === 'undefined') return chatSeed as Message[];
+  const stored = window.localStorage.getItem('ailc-memory');
+  if (!stored) return chatSeed as Message[];
+  try {
+    const parsed = JSON.parse(stored) as Message[];
+    return Array.isArray(parsed) && parsed.length ? parsed : chatSeed as Message[];
+  } catch {
+    return chatSeed as Message[];
+  }
+}
+
+function hasEscalationMessage(messages: Message[]) {
+  return messages.some((message) => message.supportEscalation || message.intent === 'confusion-support');
+}
 
 const defaultLearningActions = buildTutorResponse('What is bending moment?').followUps;
 
@@ -122,11 +140,11 @@ export default function LearningPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [messages, setMessages] = useState<Message[]>(chatSeed);
+  const [messages, setMessages] = useState<Message[]>(readStoredMessages);
   const [input, setInput] = useState(() => searchParams.get('question') ?? '');
   const [loading, setLoading] = useState(false);
   const [streamingMessage, setStreamingMessage] = useState<Message | null>(null);
-  const [showSupport, setShowSupport] = useState(false);
+  const [showSupport, setShowSupport] = useState(() => hasEscalationMessage(readStoredMessages()));
   const [selectedMethod, setSelectedMethod] = useState<LearningMethod>(() => {
     const requested = searchParams.get('method');
     return learningMethodOptions.some((item) => item.id === requested)
@@ -134,27 +152,18 @@ export default function LearningPage() {
       : 'simple';
   });
   const [contextExpanded, setContextExpanded] = useState(false);
-  const [tutorCollapsed, setTutorCollapsed] = useState(true);
+  const [tutorCollapsed, setTutorCollapsed] = useState(() => !hasEscalationMessage(readStoredMessages()));
   const [toast, setToast] = useState('');
   const [contactOpen, setContactOpen] = useState(false);
   const [contactReason, setContactReason] = useState('Concept clarification');
   const [contactQuestion, setContactQuestion] = useState('');
+  const [supportRequestType, setSupportRequestType] = useState<Exclude<SupportEscalationId, 'email'> | null>(null);
+  const [supportRequestSeed, setSupportRequestSeed] = useState('');
   const [announcement, setAnnouncement] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const streamTimerRef = useRef<number | null>(null);
   const queryHandledRef = useRef(false);
-
-  useEffect(() => {
-    const stored = window.localStorage.getItem('ailc-memory');
-    if (stored) {
-      try {
-        setMessages(JSON.parse(stored) as Message[]);
-      } catch {
-        setMessages(chatSeed);
-      }
-    }
-  }, []);
 
   useEffect(() => {
     const question = searchParams.get('question');
@@ -208,51 +217,16 @@ export default function LearningPage() {
   function sendMessage(text = input) {
     const question = text.trim();
     if (!question || loading) return;
+    setTutorCollapsed(false);
     setMessages((items) => [...items, { role: 'student', text: question }]);
     setInput('');
     setLoading(true);
     setAnnouncement('AI Tutor is checking approved unit content.');
     setTimeout(() => {
-      const low = text.toLowerCase();
-      const scripted = aiResponses[text];
-      const isStillConfused =
-        low.includes('still confused') ||
-        low.includes("still don't understand") ||
-        low.includes('still do not understand') ||
-        low.includes('still stuck') ||
-        low.includes('confused');
-
-      if (isStillConfused) setShowSupport(true);
-
-      let responseText: string;
-      let responseSource: string | undefined;
-
-      if (isStillConfused) {
-        responseText =
-          'Thanks for saying that. Since this still feels unclear, I recommend moving from explanation into support. Try a group discussion to compare reasoning, a 1-on-1 mentoring session for study strategy, or a lecturer catch-up if the confusion is about expectations. Bring these questions: 1. Where exactly does shear become moment? 2. How do I identify the maximum moment location? 3. How can I explain my reasoning without asking for an assessment answer?';
-        responseSource = 'Week 4 Lecture Slides, Slide 18';
-      } else if (low.includes('assignment')) {
-        responseText =
-          'I can help you understand the concept so you can discuss it confidently, but I cannot draft assessment content. Focus on explaining how load position changes shear, and how shear changes the bending moment shape.';
-        responseSource = 'Assessment Brief, Academic Integrity Guidance';
-      } else if (low.includes('internet') || low.includes('answer')) {
-        responseText =
-          "I'm not confident enough to answer this using the approved unit materials. I recommend PASS, tutorial discussion, or preparing a contextual request for your lecturer.";
-        responseText =
-          "I'm not confident enough to answer this using the approved unit materials. I recommend PASS, tutorial discussion, or preparing a contextual request for your lecturer from Human support.";
-        responseSource = 'Approved unit materials insufficient for a grounded answer';
-      } else if (scripted) {
-        responseText = scripted;
-        responseSource = 'Week 4 Lecture Slides, Slide 18';
-      } else {
-        responseText =
-          'Let us use a worked example. First find reactions, then draw shear, then use the shear areas to build the bending moment diagram. If the answer still feels uncertain, I can prepare questions for your tutorial or PASS session.';
-        responseSource = 'Week 4 Lecture, Slide 18';
-      }
-
       const deterministicResponse = buildTutorResponse(question);
-      responseText = deterministicResponse.text;
-      responseSource = deterministicResponse.source;
+      const responseText = deterministicResponse.text;
+      const responseSource = deterministicResponse.source;
+      const supportEscalation = deterministicResponse.intent === 'confusion-support' && isConfusionEscalationIntent(question);
       setShowSupport(Boolean(deterministicResponse.showSupport));
       const state = deterministicResponse.state ?? classifyResponse(responseText, responseSource);
       const followUps = deterministicResponse.followUps;
@@ -269,7 +243,16 @@ export default function LearningPage() {
           streamTimerRef.current = null;
           setMessages((items) => [
             ...items,
-            { role: 'ai', text: responseText, source: responseSource, state, intent: deterministicResponse.intent, followUps },
+            {
+              role: 'ai',
+              text: responseText,
+              source: responseSource,
+              state,
+              intent: deterministicResponse.intent,
+              followUps,
+              supportEscalation,
+              supportSeed: question,
+            },
           ]);
           setStreamingMessage(null);
           setLoading(false);
@@ -308,8 +291,36 @@ export default function LearningPage() {
       navigate(action.value);
       return;
     }
+    if (action.label === '1-on-1 Mentor Session') {
+      handleSupportEscalation('mentor');
+      return;
+    }
+    if (action.label === 'Group Study Session') {
+      handleSupportEscalation('group');
+      return;
+    }
+    if (action.label === 'Lecturer Catch-up Session') {
+      handleSupportEscalation('catchup');
+      return;
+    }
+    if (action.label === 'Email Lecturer') {
+      handleSupportEscalation('email');
+      return;
+    }
     setContactReason(action.value);
     setContactOpen(true);
+  }
+
+  function handleSupportEscalation(id: SupportEscalationId, seed?: string) {
+    const studentContext = seed?.trim() || `I am still confused about ${unit.topic}.`;
+    setSupportRequestSeed(studentContext);
+    if (id === 'email') {
+      setContactReason('Concept clarification');
+      setContactQuestion(`I am still confused about ${unit.topic}.\n\nWhat I asked the AI Companion:\n${studentContext}\n\nCould you please help me understand where my reasoning is breaking down?`);
+      setContactOpen(true);
+      return;
+    }
+    setSupportRequestType(id);
   }
 
   function addPassReminder() {
@@ -345,6 +356,15 @@ export default function LearningPage() {
         context={`${unit.week} ${unit.topic} - ${contactReason}`}
         defaultSubject={`${unit.code}: ${contactReason}`}
         defaultMessage={contactQuestion}
+      />
+      <SupportRequestDialog
+        open={Boolean(supportRequestType)}
+        type={supportRequestType}
+        onClose={() => setSupportRequestType(null)}
+        unitCode={unit.code}
+        unitTitle={unit.name}
+        context={`${unit.week} ${unit.topic}`}
+        studentMessage={supportRequestSeed}
       />
 
       <section className="min-w-0 space-y-4">
@@ -520,6 +540,7 @@ export default function LearningPage() {
                   key={`${message.role}-${index}`}
                   message={message}
                   onFollowUp={handleTutorAction}
+                  onSupportSelect={(id) => handleSupportEscalation(id, message.supportSeed)}
                   onPin={message.role === 'ai' ? () => togglePinned(index) : undefined}
                 />
               ))}
@@ -891,11 +912,13 @@ function BeamDiagram({ large = false }: { large?: boolean }) {
 function AiTutorMessage({
   message,
   onFollowUp,
+  onSupportSelect,
   onPin,
   streaming = false,
 }: {
   message: Message;
   onFollowUp: (action: TutorAction | string) => void;
+  onSupportSelect?: (id: SupportEscalationId) => void;
   onPin?: () => void;
   streaming?: boolean;
 }) {
@@ -968,8 +991,12 @@ function AiTutorMessage({
           )}
         </div>
 
+        {(message.supportEscalation || message.intent === 'confusion-support') && onSupportSelect && (
+          <SupportEscalationActions onSelect={onSupportSelect} className="ml-1" />
+        )}
+
         {/* Suggested follow-ups */}
-        {message.followUps && message.followUps.length > 0 && (
+        {!(message.supportEscalation || message.intent === 'confusion-support') && message.followUps && message.followUps.length > 0 && (
           <div className="ml-1 flex flex-wrap gap-2">
             {message.followUps.map((followUp) => {
               const label = typeof followUp === 'string' ? followUp : followUp.label;

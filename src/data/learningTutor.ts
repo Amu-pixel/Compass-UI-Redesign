@@ -48,6 +48,35 @@ export type TutorResponse = {
   state?: 'grounded' | 'uncertain' | 'unsupported' | 'escalated';
 };
 
+export type SupportEscalationId = 'mentor' | 'group' | 'email' | 'catchup';
+
+export const supportEscalationOptions: Array<{
+  id: SupportEscalationId;
+  title: string;
+  description: string;
+}> = [
+  {
+    id: 'mentor',
+    title: '1-on-1 Mentor Session',
+    description: 'Prepare a study-support request for a peer mentor.',
+  },
+  {
+    id: 'group',
+    title: 'Group Study Session',
+    description: 'Use the next study group to compare reasoning with classmates.',
+  },
+  {
+    id: 'email',
+    title: 'Email Lecturer',
+    description: 'Open a lecturer email draft with this confusion context included.',
+  },
+  {
+    id: 'catchup',
+    title: 'Lecturer Catch-up Session',
+    description: 'Prepare a lecturer catch-up request for conceptual clarification.',
+  },
+];
+
 const lessonTerms = [
   'beam',
   'bending',
@@ -70,10 +99,58 @@ function includesAny(text: string, terms: string[]) {
   return terms.some((term) => text.includes(term));
 }
 
-export function classifyTutorIntent(question: string): TutorIntent {
-  const text = question.toLowerCase().trim();
+function normalizeIntentText(question: string) {
+  return question
+    .toLowerCase()
+    .replace(/[’‘]/g, "'")
+    .replace(/[“”]/g, '"')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
 
-  if (includesAny(text, ['confused', 'do not understand', "don't understand", 'not understand', 'stuck', 'unclear', 'lost', 'support questions'])) {
+export function isConfusionEscalationIntent(question: string) {
+  const text = normalizeIntentText(question);
+  if (!text) return false;
+
+  const resolvedPatterns = [
+    /\bwas confused\b.*\b(now|but now)\b.*\b(understand|get it|makes sense)\b/,
+    /\bconfused before\b.*\b(now|but now)\b.*\b(understand|get it|makes sense)\b/,
+    /\bnot confusing anymore\b/,
+    /\bnot confused anymore\b/,
+    /\bthanks\b.*\b(get it now|understand now|makes sense now)\b/,
+    /\bi get it now\b/,
+    /\bnow i understand\b/,
+    /\bmakes sense now\b/,
+  ];
+
+  if (resolvedPatterns.some((pattern) => pattern.test(text))) return false;
+
+  const helpSeekingPatterns = [
+    /\bstill confused\b/,
+    /\bstill (don't|dont|do not) understand\b/,
+    /\b(don't|dont|do not) get it\b/,
+    /\bnot making sense\b/,
+    /\bconfused\b/,
+    /\blost\b/,
+    /\bneed more help\b/,
+    /\bneed help\b/,
+    /\bneed someone to explain\b/,
+    /\bcan i talk to someone\b/,
+    /\bcan i get help\b/,
+    /\bthis explanation (did not|didn't|didnt) help\b/,
+    /\b(i'm|im|i am) struggling\b/,
+    /\btoo difficult\b/,
+    /\b(can't|cant|cannot) understand\b/,
+    /\bstill stuck\b/,
+  ];
+
+  return helpSeekingPatterns.some((pattern) => pattern.test(text));
+}
+
+export function classifyTutorIntent(question: string): TutorIntent {
+  const text = normalizeIntentText(question);
+
+  if (isConfusionEscalationIntent(question) || includesAny(text, ['support questions'])) {
     return 'confusion-support';
   }
   if (includesAny(text, ['common mistake', 'mistakes', 'what goes wrong', 'avoid'])) {
@@ -359,16 +436,16 @@ export function buildTutorResponse(question: string): TutorResponse {
     },
     'confusion-support': {
       intent,
-      text: 'Thanks for saying that. Let us reduce this to one idea: bending moment records the accumulated effect of shear as you move along the beam. Positive shear adds to moment; negative shear subtracts from it. Start with the interactive diagram and trace only the sign of shear before looking at values. If that still feels unclear, use the lecturer contact option or revisit the Week 3 shear-force prerequisite.',
+      text: 'I hear you. If the concept still feels unclear, the next best step is human support alongside the AI explanation. Choose one support pathway below and I will help you prepare the request honestly.',
       source: 'Week 4 Lecture Slides, Slide 18; Week 3 prerequisite recap',
       recommendedMethod: 'simple',
       showSupport: true,
+      state: 'escalated',
       followUps: [
-        { label: 'Explain more simply', kind: 'method', value: 'simple' },
-        { label: 'Open visual diagram', kind: 'method', value: 'diagram' },
-        { label: 'Use a real-world analogy', kind: 'method', value: 'analogy' },
-        { label: 'Contact lecturer', kind: 'contact', value: 'Concept clarification' },
-        { label: 'View prerequisite topic', kind: 'navigate', value: '/demo' },
+        { label: '1-on-1 Mentor Session', kind: 'contact', value: 'Mentor session request' },
+        { label: 'Group Study Session', kind: 'contact', value: 'Group study session request' },
+        { label: 'Email Lecturer', kind: 'contact', value: 'Concept clarification' },
+        { label: 'Lecturer Catch-up Session', kind: 'contact', value: 'Lecturer catch-up request' },
       ],
     },
     unsupported: {
