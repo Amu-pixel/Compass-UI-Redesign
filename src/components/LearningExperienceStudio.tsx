@@ -688,6 +688,7 @@ function useMediaController(ref: RefObject<HTMLMediaElement | null>, storageKey:
 export function LearningExperienceStudio({ selectedMethod, onSelect, onAsk }: StudioProps) {
   const [videoRequested, setVideoRequested] = useState<boolean>(selectedMethod === 'video' && !MEDIA_PREVIEW_ONLY);
   const video = useGeneratedLessonVideo(videoRequested);
+  const mediaFocused = selectedMethod === 'video' || selectedMethod === 'podcast';
 
   useEffect(() => {
     if (selectedMethod === 'video' && !MEDIA_PREVIEW_ONLY) setVideoRequested(true);
@@ -703,40 +704,66 @@ export function LearningExperienceStudio({ selectedMethod, onSelect, onAsk }: St
           </div>
           <Badge tone="ai">Grounded in Week 4</Badge>
         </div>
-        <div className="mt-5 grid min-w-0 gap-3 xl:grid-cols-3" role="tablist" aria-label="Learning methods">
-          {methodGroups.map((group) => (
-            <div key={group.title} className="min-w-0 rounded-xl border border-line bg-white p-3">
-              <div className="mb-3 flex flex-wrap items-baseline justify-between gap-3">
-                <p className="font-display text-sm font-bold text-ink">{group.title}</p>
-                <p className="text-[11px] font-semibold text-slate-soft">{group.purpose}</p>
+        {mediaFocused ? (
+          <div className="mt-4 grid min-w-0 grid-cols-2 gap-2 rounded-xl border border-line bg-white p-2 sm:grid-cols-3 lg:grid-cols-5" role="tablist" aria-label="Learning methods">
+            {learningMethodOptions.map((option) => {
+              const Icon = option.icon;
+              const active = selectedMethod === option.id;
+              return (
+                <button
+                  key={option.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={active}
+                  aria-controls={`method-panel-${option.id}`}
+                  onClick={() => onSelect(option.id)}
+                  className={cn(
+                    'premium-focus inline-flex min-h-10 min-w-0 items-center gap-2 rounded-lg border px-3 text-sm font-bold outline-none transition duration-150 focus-visible:ring-2 focus-visible:ring-ai-cyan/70',
+                    active ? 'border-ink bg-ink text-white shadow-sm' : 'border-line bg-paper text-ink hover:border-companion/45 hover:bg-companion-tint/60',
+                  )}
+                >
+                  <Icon size={15} className={active ? 'text-ai-cyan' : 'text-companion'} />
+                  <span className="min-w-0 truncate">{option.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="mt-5 grid min-w-0 gap-3 xl:grid-cols-3" role="tablist" aria-label="Learning methods">
+            {methodGroups.map((group) => (
+              <div key={group.title} className="min-w-0 rounded-xl border border-line bg-white p-3">
+                <div className="mb-3 flex flex-wrap items-baseline justify-between gap-3">
+                  <p className="font-display text-sm font-bold text-ink">{group.title}</p>
+                  <p className="text-[11px] font-semibold text-slate-soft">{group.purpose}</p>
+                </div>
+                <div className="grid gap-2">
+                  {group.methods.map((id) => {
+                    const option = learningMethodOptions.find((item) => item.id === id)!;
+                    const Icon = option.icon;
+                    const active = selectedMethod === id;
+                    return (
+                      <button
+                        key={id}
+                        type="button"
+                        role="tab"
+                        aria-selected={active}
+                        aria-controls={`method-panel-${id}`}
+                        onClick={() => onSelect(id)}
+                        className={cn(
+                          'premium-focus group min-h-16 min-w-0 rounded-lg border px-3 py-2.5 text-left outline-none transition duration-150 focus-visible:ring-2 focus-visible:ring-ai-cyan/70',
+                          active ? 'border-ink bg-ink text-white shadow-sm' : 'border-line bg-paper text-ink hover:border-companion/45 hover:bg-companion-tint/60',
+                        )}
+                      >
+                        <span className="flex min-w-0 items-center gap-2 text-sm font-bold"><Icon size={15} className={active ? 'text-ai-cyan' : 'text-companion'} /> <span className="min-w-0 break-words">{option.label}</span></span>
+                        <span className={cn('mt-1 block text-xs leading-5', active ? 'text-white/68' : 'text-slate-soft')}>{option.description}</span>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
-              <div className="grid gap-2">
-                {group.methods.map((id) => {
-                  const option = learningMethodOptions.find((item) => item.id === id)!;
-                  const Icon = option.icon;
-                  const active = selectedMethod === id;
-                  return (
-                    <button
-                      key={id}
-                      type="button"
-                      role="tab"
-                      aria-selected={active}
-                      aria-controls={`method-panel-${id}`}
-                      onClick={() => onSelect(id)}
-                      className={cn(
-                        'premium-focus group min-h-16 min-w-0 rounded-lg border px-3 py-2.5 text-left outline-none transition duration-150 focus-visible:ring-2 focus-visible:ring-ai-cyan/70',
-                        active ? 'border-ink bg-ink text-white shadow-sm' : 'border-line bg-paper text-ink hover:border-companion/45 hover:bg-companion-tint/60',
-                      )}
-                    >
-                      <span className="flex min-w-0 items-center gap-2 text-sm font-bold"><Icon size={15} className={active ? 'text-ai-cyan' : 'text-companion'} /> <span className="min-w-0 break-words">{option.label}</span></span>
-                      <span className={cn('mt-1 block text-xs leading-5', active ? 'text-white/68' : 'text-slate-soft')}>{option.description}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
         <div className={cn('mt-4 rounded-xl border px-4 py-3 text-sm font-semibold', methodSignals[selectedMethod].accent)}>
           <span className="font-mono text-[10px] uppercase tracking-[0.14em]">Selected method</span>
           <span className="mx-2 text-current/45">/</span>
@@ -1127,7 +1154,23 @@ function VideoExperience({ generatedVideo }: { generatedVideo: { url: string; lo
   }
 
   if (generatedVideo.loading || !generatedVideo.url) {
-    return <div className="grid min-h-[520px] place-items-center bg-night p-8 text-center text-mist"><div><div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl border border-ai-cyan/25 bg-ai-cyan/10"><Gauge className="animate-pulse text-ai-cyan" size={24} /></div><h3 className="mt-5 font-display text-xl font-bold">Preparing the local video lesson</h3><p className="mt-2 max-w-md text-sm leading-6 text-mist-muted">Rendering eight educational scenes in your browser (~32 seconds). The finished lesson uses native playback and real media time.</p><div className="mt-5"><LoadingPill label="Rendering educational video" /></div></div></div>;
+    return (
+      <div className="grid min-h-[480px] place-items-center bg-night p-6 text-center text-mist sm:p-8">
+        <div className="max-w-xl">
+          <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl border border-ai-cyan/25 bg-ai-cyan/10">
+            <Gauge className="animate-pulse text-ai-cyan" size={24} />
+          </div>
+          <p className="mt-5 font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-ai-cyan">Preparing lesson video</p>
+          <h3 className="mt-2 font-display text-2xl font-bold">Bending moment diagrams in eight scenes</h3>
+          <p className="mt-3 text-sm leading-6 text-mist-muted">
+            The browser is rendering a local HTML5 video from the approved lesson storyboard. When ready, playback uses native media time, chapters, captions, bookmarks, and notes.
+          </p>
+          <div className="mt-5">
+            <LoadingPill label="Rendering local lesson media" />
+          </div>
+        </div>
+      </div>
+    );
   }
 
   const activeChapter = [...chapters].reverse().find((chapter) => controller.currentTime >= chapter.at) ?? chapters[0];
@@ -1139,7 +1182,7 @@ function VideoExperience({ generatedVideo }: { generatedVideo: { url: string; lo
         </video>
         <div className="pointer-events-none absolute inset-x-0 top-0 flex items-start justify-between bg-gradient-to-b from-black/70 to-transparent p-4">
           <div><p className="font-mono text-[10px] font-bold text-ai-cyan">CIVL301 VIDEO LESSON</p><p className="mt-1 text-sm font-bold">{activeChapter?.label ?? 'Video lesson'}</p></div>
-          {controller.complete && <span className="rounded-full bg-success px-3 py-1 text-xs font-bold text-white">90% complete</span>}
+          {controller.complete && <span className="rounded-full bg-success px-3 py-1 text-xs font-bold text-white">Complete</span>}
         </div>
         {controller.buffering && <div className="pointer-events-none absolute inset-0 grid place-items-center bg-black/35"><LoadingPill label="Buffering video" /></div>}
       </div>
@@ -1286,7 +1329,7 @@ function PodcastExperience() {
       <audio ref={audioRef} src={podcastUrl} preload="metadata" {...controller.mediaEvents} />
       <div className="grid lg:grid-cols-[300px_minmax(0,1fr)]">
         <aside className="border-b border-white/10 bg-night-soft p-6 lg:border-b-0 lg:border-r">
-          <div className="aspect-square rounded-2xl border border-companion/25 bg-[radial-gradient(circle_at_35%_30%,rgba(245,196,0,.22),transparent_34%),linear-gradient(145deg,#232323,#111111)] p-6 shadow-2xl">
+          <div className="aspect-square rounded-2xl border border-companion/25 bg-night p-6 shadow-sm">
             <div className="flex h-full flex-col justify-between"><span className="grid h-12 w-12 place-items-center rounded-full bg-ai-cyan text-night"><Headphones size={22} /></span><div><p className="font-mono text-[10px] font-bold text-ai-cyan">STRUCTURAL FIELD NOTE 04</p><h3 className="mt-2 font-display text-2xl font-bold">Where moment reaches its peak</h3><p className="mt-2 text-sm text-mist-muted">Dr Avery Tan / CIVL301</p></div></div>
           </div>
           <p className="mt-5 text-xs leading-5 text-mist-muted">Prerecorded narration (22 kHz WAV). Listening position and bookmarks are stored on this device.</p>
@@ -1294,7 +1337,7 @@ function PodcastExperience() {
         <div className="min-w-0 p-6 sm:p-8">
           <div className="flex flex-wrap items-start justify-between gap-4"><div><p className="font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-ai-cyan">Audio field note</p><h3 className="mt-2 font-display text-2xl font-bold">Listen, follow, and capture the idea</h3></div>{readStoredNumber('civl301-podcast-position') > 1 && <Badge tone="ai">Continue listening</Badge>}</div>
 
-          {/* Premium segmented chapter timeline */}
+          {/* Segmented chapter timeline */}
           <div className="mt-7 rounded-xl border border-white/10 bg-black/20 p-4">
             <div className="flex items-center gap-2 text-[10px] font-bold text-mist-muted">
               <span className="font-mono text-ai-cyan">{formatTime(controller.currentTime)}</span>

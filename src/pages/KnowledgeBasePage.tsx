@@ -1,5 +1,5 @@
-import { BookOpen, CheckCircle2, Database, Edit3, Eye, FileClock, History, Layers, ShieldCheck, XCircle } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { BookOpen, CheckCircle2, Database, Edit3, Eye, FileClock, Filter, History, Layers, Search, ShieldCheck, XCircle } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
 import { lecturerInbox, unit } from '../data/mockData';
 import { Badge, Button, Card, Toast } from '../components/ui';
 import { cn } from '../utils/classNames';
@@ -62,7 +62,23 @@ export default function KnowledgeBasePage() {
   const [sources, setSources] = useState(initialSources);
   const [selectedId, setSelectedId] = useState(initialSources[0].id);
   const [feedback, setFeedback] = useState('');
+  const [query, setQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'all' | SourceStatus>('all');
   const selected = useMemo(() => sources.find((source) => source.id === selectedId) ?? sources[0], [selectedId, sources]);
+  const filteredSources = useMemo(() => {
+    const term = query.trim().toLowerCase();
+    return sources.filter((source) => {
+      const matchesStatus = statusFilter === 'all' || source.status === statusFilter;
+      const haystack = `${source.title} ${source.course} ${source.provenance} ${source.version} ${source.impact}`.toLowerCase();
+      return matchesStatus && (!term || haystack.includes(term));
+    });
+  }, [query, sources, statusFilter]);
+
+  useEffect(() => {
+    if (filteredSources.length > 0 && !filteredSources.some((source) => source.id === selectedId)) {
+      setSelectedId(filteredSources[0].id);
+    }
+  }, [filteredSources, selectedId]);
 
   function notify(message: string) {
     setToast(message);
@@ -114,11 +130,43 @@ export default function KnowledgeBasePage() {
       <div className="grid gap-5 xl:grid-cols-[430px_1fr]">
         <Card className="h-fit p-0">
           <div className="border-b border-line p-4">
-            <p className="font-mono text-xs font-bold uppercase text-slate-soft">Sources</p>
-            <h2 className="mt-1 font-display text-xl font-bold">Validation queue</h2>
+            <p className="font-mono text-xs font-bold uppercase text-slate-soft">Academic search</p>
+            <h2 className="mt-1 font-display text-xl font-bold">Search allowed knowledge</h2>
+            <label className="mt-4 flex min-h-11 items-center gap-2 rounded-xl border border-line bg-white px-3 text-sm font-semibold text-ink focus-within:border-companion focus-within:ring-2 focus-within:ring-companion/20">
+              <Search size={16} className="text-slate-soft" />
+              <input
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="Search title, provenance, week, or impact"
+                aria-label="Search knowledge base sources"
+                className="min-w-0 flex-1 bg-transparent outline-none placeholder:text-slate-soft"
+              />
+            </label>
+            <div className="mt-3 flex flex-wrap gap-2" aria-label="Knowledge base filters">
+              {(['all', 'indexed', 'pending', 'excluded'] as const).map((filter) => (
+                <button
+                  key={filter}
+                  type="button"
+                  aria-pressed={statusFilter === filter}
+                  onClick={() => setStatusFilter(filter)}
+                  className={cn('inline-flex items-center gap-1 rounded-full border px-3 py-1.5 text-xs font-bold capitalize transition', statusFilter === filter ? 'border-ink bg-ink text-white' : 'border-line bg-paper text-ink hover:border-companion')}
+                >
+                  {filter === 'all' && <Filter size={12} />}
+                  {filter}
+                </button>
+              ))}
+            </div>
+            <p role="status" className="mt-3 text-xs font-semibold text-slate-soft">{filteredSources.length} source{filteredSources.length === 1 ? '' : 's'} shown</p>
           </div>
           <div className="divide-y divide-line">
-            {sources.map((source) => (
+            {filteredSources.length === 0 && (
+              <div className="p-5">
+                <p className="font-display text-base font-bold text-ink">No matching sources</p>
+                <p className="mt-2 text-sm leading-6 text-slate-copy">Try another title, week, provenance term, or clear the status filter.</p>
+                <Button variant="secondary" size="sm" className="mt-4" onClick={() => { setQuery(''); setStatusFilter('all'); }}>Clear search</Button>
+              </div>
+            )}
+            {filteredSources.map((source) => (
               <button
                 key={source.id}
                 type="button"

@@ -161,16 +161,12 @@ export default function UnitPage() {
       {/* ── Course identity header ── */}
       <div className="mb-5 overflow-hidden rounded-[24px] border border-line bg-white shadow-sm">
         {/* Course image strip */}
-        <div
-          className="relative h-24 sm:h-28"
-          style={{ background: 'linear-gradient(135deg, #15161A 0%, #9E1B32 100%)' }}
-        >
-          <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMSIgY3k9IjEiIHI9IjEiIGZpbGw9InJnYmEoMjU1LDI1NSwyNTUsMC4wNikiLz48L3N2Zz4=')] opacity-40" />
+        <div className="relative h-24 border-b border-companion/30 bg-night sm:h-28">
           <div className="absolute left-5 top-4 flex items-center gap-2 sm:left-6">
-            <span className="rounded-full bg-night/70 px-3 py-1 font-mono text-xs font-bold text-white backdrop-blur">
+            <span className="rounded-full border border-white/12 bg-white/10 px-3 py-1 font-mono text-xs font-bold text-white">
               {unit.code}
             </span>
-            <span className="rounded-full bg-night/50 px-3 py-1 font-mono text-xs font-semibold text-white/80 backdrop-blur">
+            <span className="rounded-full border border-white/12 bg-white/10 px-3 py-1 font-mono text-xs font-semibold text-white/80">
               Semester 2, 2026
             </span>
           </div>
@@ -230,7 +226,26 @@ export default function UnitPage() {
               <span className="text-ink">68%</span>
             </div>
             <div className="h-2 rounded-full bg-paper-dim">
-              <div className="h-2 rounded-full bg-gradient-to-r from-companion to-companion/70" style={{ width: '68%' }} />
+              <div className="h-2 rounded-full bg-companion" style={{ width: '68%' }} />
+            </div>
+          </div>
+
+          <div className="mt-5 grid gap-3 lg:grid-cols-[1fr_320px]">
+            <div className="rounded-2xl border border-line bg-paper p-4">
+              <p className="font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-companion">Next learning action</p>
+              <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <p className="font-display text-lg font-bold text-ink">Continue Week 4: Bending Moment Diagrams</p>
+                  <p className="mt-1 text-sm leading-6 text-slate-copy">Resume the current lesson and connect shear area to moment change.</p>
+                </div>
+                <Button to="/demo/learn" size="sm">Continue learning <ArrowRight size={14} /></Button>
+              </div>
+            </div>
+            <div className="rounded-2xl border border-line bg-paper p-4">
+              <p className="font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-cardinal">Upcoming assessment</p>
+              <p className="mt-2 font-display text-lg font-bold text-ink">Draft design reflection</p>
+              <p className="mt-1 text-sm leading-6 text-slate-copy">20% weighting. Draft due Monday 9 am.</p>
+              <Button to="/demo/assessment" variant="secondary" size="sm" className="mt-3">Open assessment</Button>
             </div>
           </div>
 
@@ -376,7 +391,7 @@ function UnitMaterialsTab({
                     point often marks a maximum or minimum moment.
                   </p>
                 </div>
-                <div className="rounded-xl border border-companion/25 bg-gradient-to-br from-companion-tint to-white p-5 shadow-[0_0_24px_rgba(245,196,0,0.14)]">
+                <div className="rounded-xl border border-companion/25 bg-companion-tint p-5">
                   <p className="flex items-center gap-2 font-mono text-xs font-semibold uppercase text-companion">
                     <Sparkles size={12} /> AI Companion
                   </p>
@@ -387,7 +402,7 @@ function UnitMaterialsTab({
                 </div>
               </div>
               {/* Diagram placeholder */}
-              <div className="mt-6 flex h-28 items-center justify-center rounded-xl border border-dashed border-companion/30 bg-gradient-to-r from-white via-companion-tint to-[#FFF5C2]">
+              <div className="mt-6 flex h-28 items-center justify-center rounded-xl border border-dashed border-companion/30 bg-paper">
                 <p className="font-mono text-xs font-semibold text-slate-soft">
                   Shear / Moment diagram
                 </p>
@@ -421,7 +436,7 @@ function UnitMaterialsTab({
       </section>
 
       {/* AI Companion panel */}
-      <Card className="h-fit border-companion/25 bg-gradient-to-br from-white to-companion-tint/70 shadow-[0_0_36px_rgba(245,196,0,0.14)]">
+      <Card className="h-fit border-companion/25 bg-white">
         {/* Panel header */}
         <div className="mb-4 flex items-center justify-between gap-3">
           <div className="flex items-center gap-2">
@@ -615,7 +630,7 @@ function OverviewTab({ onNotify }: { onNotify: (msg: string) => void }) {
 
       <div className="space-y-5">
         {/* Next action */}
-        <Card className="border-cardinal/20 bg-gradient-to-br from-cardinal-tint to-white">
+        <Card className="border-cardinal/20 bg-cardinal-tint">
           <Badge tone="danger">Due Monday 9 am</Badge>
           <h3 className="mt-3 font-display text-lg font-bold">Draft design reflection</h3>
           <p className="mt-2 text-sm leading-6 text-slate-copy">
@@ -629,7 +644,7 @@ function OverviewTab({ onNotify }: { onNotify: (msg: string) => void }) {
         </Card>
 
         {/* AI availability */}
-        <Card className="border-companion/25 bg-gradient-to-br from-white to-companion-tint/60">
+        <Card className="border-companion/25 bg-companion-tint">
           <div className="flex items-center gap-2">
             <Brain size={18} className="text-companion" />
             <p className="font-display text-base font-bold">AI Tutor available</p>
@@ -793,10 +808,9 @@ function QuizPlaceholderButton() {
               <Sparkles size={16} />
             </div>
             <div>
-              <p className="font-display text-sm font-bold">Online quiz — coming soon</p>
+              <p className="font-display text-sm font-bold">Online quiz schedule</p>
               <p className="mt-1 text-xs leading-5 text-slate-copy">
-                Quiz 5 opens Wednesday and will appear here as an interactive question set grounded in
-                the approved unit content.
+                Quiz 5 opens Wednesday. This panel shows the official timing only; the quiz itself is not opened from this local demo.
               </p>
             </div>
           </div>

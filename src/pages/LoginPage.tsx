@@ -15,7 +15,7 @@ import {
 import type { LucideIcon } from 'lucide-react';
 import { FormEvent, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Button, ConfidenceBadge, Toast } from '../components/ui';
+import { Button, ConfidenceBadge } from '../components/ui';
 import { useAuth, type Role } from '../context/AuthContext';
 
 const roleOptions: Array<{
@@ -55,7 +55,6 @@ export default function LoginPage() {
   const [name, setName] = useState('David');
   const [email, setEmail] = useState('david@student.bentley.edu');
   const [password, setPassword] = useState('learning2030');
-  const [notice, setNotice] = useState('');
   const { login } = useAuth();
   const navigate = useNavigate();
 
@@ -65,16 +64,11 @@ export default function LoginPage() {
     navigate(role === 'student' ? '/courses' : '/lecturer');
   }
 
-  function showPlaceholder(message: string) {
-    setNotice(message);
-    window.setTimeout(() => setNotice(''), 2400);
-  }
-
   return (
     <div className="min-h-screen overflow-hidden bg-night text-mist">
-      <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(circle_at_18%_14%,rgba(245,196,0,0.16),transparent_28%),radial-gradient(circle_at_82%_8%,rgba(255,245,194,0.10),transparent_30%),linear-gradient(180deg,#111111_0%,#1B1B1B_54%,#0C0C0C_100%)]" />
+      <div className="pointer-events-none fixed inset-0 bg-night" />
       <div className="relative mx-auto flex min-h-screen w-full max-w-7xl flex-col px-5 py-5 sm:px-8">
-        <header className="flex items-center justify-between gap-4 rounded-full border border-white/10 bg-white/[0.04] px-4 py-3 shadow-[0_18px_70px_rgba(0,0,0,0.24)] backdrop-blur-xl">
+        <header className="flex items-center justify-between gap-4 rounded-full border border-white/10 bg-white/[0.04] px-4 py-3 shadow-sm">
           <a href="#top" className="premium-focus flex items-center gap-3 rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ai-cyan/70">
             <span className="grid h-10 w-10 place-items-center rounded-full border border-companion/40 bg-companion text-ink shadow-sm">
               <Sparkles size={19} />
@@ -110,7 +104,7 @@ export default function LoginPage() {
               Premium AI-powered learning management
             </div>
 
-            <h1 className="mt-7 max-w-4xl font-display text-5xl font-extrabold leading-[1.02] text-mist sm:text-6xl lg:text-7xl">
+            <h1 className="mt-7 max-w-4xl font-display text-4xl font-extrabold leading-[1.05] text-mist sm:text-5xl lg:text-6xl">
               A calmer way to learn, teach, and trust AI.
             </h1>
             <p className="mt-6 max-w-2xl text-lg leading-8 text-mist-muted">
@@ -124,13 +118,12 @@ export default function LoginPage() {
               >
                 Enter workspace <ArrowRight size={17} />
               </a>
-              <button
-                type="button"
-                onClick={() => showPlaceholder('Institutional pilot requests are prepared for the commercial onboarding flow.')}
+              <a
+                href="#trust"
                 className="premium-focus inline-flex min-h-12 items-center justify-center rounded-full border border-white/12 bg-white/[0.04] px-6 text-sm font-bold text-mist outline-none hover:border-white/24 hover:bg-white/[0.07] focus-visible:ring-2 focus-visible:ring-ai-cyan/70"
               >
-                Request pilot
-              </button>
+                View trust model
+              </a>
             </div>
 
             <div id="trust" className="mt-9 grid max-w-2xl gap-3 sm:grid-cols-2">
@@ -143,7 +136,7 @@ export default function LoginPage() {
             </div>
           </section>
 
-          <section id="access" aria-label="Role entry and sign in" className="animate-in rounded-[28px] border border-white/10 bg-white/[0.055] p-4 shadow-premium backdrop-blur-xl sm:p-5">
+          <section id="access" aria-label="Role entry and sign in" className="animate-in rounded-[28px] border border-white/10 bg-white/[0.055] p-4 shadow-sm sm:p-5">
             <div className="rounded-[22px] border border-white/10 bg-night-panel/90 p-5 sm:p-6">
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div>
@@ -222,13 +215,12 @@ export default function LoginPage() {
                 <span className="inline-flex items-center gap-1.5">
                   <LockKeyhole size={14} /> Demo credentials are prefilled
                 </span>
-                <button
-                  type="button"
-                  onClick={() => showPlaceholder('Privacy and institutional controls will open as a full governance page in a later phase.')}
+                <a
+                  href="#trust"
                   className="rounded-full font-semibold text-ai-cyan outline-none hover:text-mist focus-visible:ring-2 focus-visible:ring-ai-cyan/70"
                 >
-                  View privacy controls
-                </button>
+                  View trust controls
+                </a>
               </div>
             </div>
           </section>
@@ -238,12 +230,12 @@ export default function LoginPage() {
           {workflow.map((item) => {
             const Icon = item.icon;
             return (
-              <article key={item.label} className="rounded-3xl border border-white/10 bg-white/[0.045] p-5 shadow-[0_18px_60px_rgba(0,0,0,0.16)] backdrop-blur">
+              <article key={item.label} className="rounded-3xl border border-white/10 bg-white/[0.045] p-5 shadow-sm">
                 <div className="mb-5 flex items-center justify-between gap-3">
                   <span className="grid h-11 w-11 place-items-center rounded-2xl border border-white/10 bg-white/[0.06] text-ai-cyan">
                     <Icon size={21} />
                   </span>
-                  <span className="h-px flex-1 bg-gradient-to-r from-ai-cyan/35 to-transparent" />
+                  <span className="h-px flex-1 bg-white/10" />
                 </div>
                 <h3 className="font-display text-lg font-bold text-mist">{item.label}</h3>
                 <p className="mt-2 text-sm leading-6 text-mist-muted">{item.text}</p>
@@ -284,16 +276,14 @@ export default function LoginPage() {
 
         <footer className="flex flex-col gap-3 border-t border-white/10 py-6 text-sm text-mist-soft sm:flex-row sm:items-center sm:justify-between">
           <span>Compass AI LMS. Commercial-grade academic learning experience.</span>
-          <button
-            type="button"
-            onClick={() => showPlaceholder('Resource library previews will be connected during the course-pages phase.')}
+          <a
+            href="#workflow"
             className="inline-flex items-center gap-2 rounded-full text-left font-semibold text-mist-muted outline-none hover:text-ai-cyan focus-visible:ring-2 focus-visible:ring-ai-cyan/70"
           >
-            <LibraryBig size={16} /> Preview resources
-          </button>
+            <LibraryBig size={16} /> Review workflow
+          </a>
         </footer>
       </div>
-      {notice && <Toast message={notice} />}
     </div>
   );
 }
