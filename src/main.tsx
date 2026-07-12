@@ -1,6 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
+import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import AppLayout from './components/AppLayout';
 import { AuthProvider, RequireRole } from './context/AuthContext';
 import './index.css';
@@ -11,6 +11,7 @@ import KnowledgeBasePage from './pages/KnowledgeBasePage';
 import LecturerAssignmentsPage from './pages/LecturerAssignmentsPage';
 import LearningPage from './pages/LearningPage';
 import LoginPage from './pages/LoginPage';
+import NotFoundPage from './pages/NotFoundPage';
 import TrustPage from './pages/TrustPage';
 import UnitPage from './pages/UnitPage';
 
@@ -20,6 +21,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
       <AuthProvider>
         <Routes>
           <Route path="/" element={<LoginPage />} />
+          <Route path="/login" element={<LoginPage />} />
           <Route
             path="/courses"
             element={
@@ -40,6 +42,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
             <Route path="learn" element={<LearningPage />} />
             <Route path="assessment" element={<AssessmentPage />} />
             <Route path="trust" element={<TrustPage />} />
+            <Route path="*" element={<NotFoundPage />} />
           </Route>
           <Route
             path="/lecturer"
@@ -54,8 +57,9 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
             <Route path="review" element={<DashboardPage initialTab="queue" />} />
             <Route path="knowledge" element={<KnowledgeBasePage />} />
             <Route path="trust" element={<TrustPage />} />
+            <Route path="*" element={<NotFoundPage />} />
           </Route>
-          <Route path="*" element={<Navigate to="/" replace />} />
+          <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </AuthProvider>
     </BrowserRouter>
