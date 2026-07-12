@@ -106,7 +106,44 @@ const fieldNoteTranscript = [
   { start: 48, end: 54, text: 'Pause and sketch the relationship in your own words, then compare your reasoning with the worked diagram. This is your takeaway.' },
 ];
 
+const LESSON_VIDEO_CACHE_KEY = 'CIVL301-week4-bending-moment-video-v4';
+const LESSON_VIDEO_DB_NAME = 'compass-ai-media-cache';
+const LESSON_VIDEO_STORE_NAME = 'generated-media';
+const LESSON_VIDEO_DURATION_MS = 16_000;
+const LESSON_VIDEO_FRAME_RATE = 12;
+const LESSON_VIDEO_CHAPTERS = [
+  { at: 0, label: 'Beam and supports', text: 'A simply supported beam with pin and roller supports.' },
+  { at: 2, label: 'Applied load', text: 'A 12 kN point load is applied at midspan.' },
+  { at: 4, label: 'Reaction forces', text: 'Equilibrium gives RA = RB = 6 kN upward.' },
+  { at: 6, label: 'Shear construction', text: 'Track shear discontinuities from left to right.' },
+  { at: 8, label: 'Positive and negative shear', text: 'Shear is +6 kN left of load, minus 6 kN right of load.' },
+  { at: 10, label: 'Signed-area relationship', text: 'Signed shear area controls the change in moment.' },
+  { at: 12, label: 'Moment diagram', text: 'Moment rises under positive shear, falls under negative.' },
+  { at: 14, label: 'Peak moment and design', text: 'Zero shear marks peak moment - the critical design section.' },
+];
+
 const MEDIA_PREVIEW_ONLY = false;
+type LessonVideoStatus = 'idle' | 'checking-cache' | 'loading-cached' | 'preparing' | 'ready' | 'failed';
+
+type LessonVideoMetrics = {
+  cacheLookupMs?: number;
+  generationMs?: number;
+  cachedLoadMs?: number;
+  source?: 'cache' | 'generated';
+  status?: LessonVideoStatus;
+};
+
+type LessonVideoState = {
+  url: string;
+  status: LessonVideoStatus;
+  source?: 'cache' | 'generated';
+  error: string;
+  metrics: LessonVideoMetrics;
+  retry: () => void;
+};
+
+let lessonVideoMemoryBlob: Blob | null = null;
+let lessonVideoGenerationPromise: Promise<Blob> | null = null;
 
 function readStoredNumber(key: string) {
   const value = Number(window.localStorage.getItem(key));
@@ -127,6 +164,92 @@ function formatTime(value: number) {
   const minutes = Math.floor(value / 60);
   const seconds = Math.floor(value % 60).toString().padStart(2, '0');
   return `${minutes}:${seconds}`;
+}
+
+function getVideoMetricsTarget() {
+  return window as Window & { __compassVideoMetrics?: LessonVideoMetrics };
+}
+
+function recordVideoMetric(update: LessonVideoMetrics) {
+  const target = getVideoMetricsTarget();
+  target.__compassVideoMetrics = { ...(target.__compassVideoMetrics ?? {}), ...update };
+}
+
+function openLessonVideoDb(): Promise<IDBDatabase | null> {
+  if (!('indexedDB' in window)) return Promise.resolve(null);
+  return new Promise((resolve) => {
+    let settled = false;
+    let timeout = 0;
+    const finish = (db: IDBDatabase | null) => {
+      if (settled) return;
+      settled = true;
+      window.clearTimeout(timeout);
+      resolve(db);
+    };
+    timeout = window.setTimeout(() => finish(null), 700);
+    const request = window.indexedDB.open(LESSON_VIDEO_DB_NAME, 1);
+    request.onupgradeneeded = () => {
+      const db = request.result;
+      if (!db.objectStoreNames.contains(LESSON_VIDEO_STORE_NAME)) {
+        db.createObjectStore(LESSON_VIDEO_STORE_NAME);
+      }
+    };
+    request.onsuccess = () => finish(request.result);
+    request.onerror = () => finish(null);
+    request.onblocked = () => finish(null);
+  });
+}
+
+async function readCachedLessonVideoBlob(key: string) {
+  const db = await openLessonVideoDb();
+  if (!db) return null;
+  return new Promise<Blob | null>((resolve) => {
+    let settled = false;
+    let timeout = 0;
+    const finish = (blob: Blob | null) => {
+      if (settled) return;
+      settled = true;
+      window.clearTimeout(timeout);
+      db.close();
+      resolve(blob);
+    };
+    timeout = window.setTimeout(() => finish(null), 700);
+    const transaction = db.transaction(LESSON_VIDEO_STORE_NAME, 'readonly');
+    const store = transaction.objectStore(LESSON_VIDEO_STORE_NAME);
+    const request = store.get(key);
+    request.onsuccess = () => {
+      const value = request.result as { blob?: Blob; version?: string } | Blob | undefined;
+      if (value instanceof Blob) {
+        finish(value);
+        return;
+      }
+      finish(value?.blob instanceof Blob ? value.blob : null);
+    };
+    request.onerror = () => finish(null);
+    transaction.onerror = () => finish(null);
+  });
+}
+
+async function writeCachedLessonVideoBlob(key: string, blob: Blob) {
+  const db = await openLessonVideoDb();
+  if (!db) return;
+  await new Promise<void>((resolve) => {
+    let settled = false;
+    let timeout = 0;
+    const finish = () => {
+      if (settled) return;
+      settled = true;
+      window.clearTimeout(timeout);
+      db.close();
+      resolve();
+    };
+    timeout = window.setTimeout(finish, 700);
+    const transaction = db.transaction(LESSON_VIDEO_STORE_NAME, 'readwrite');
+    const store = transaction.objectStore(LESSON_VIDEO_STORE_NAME);
+    store.put({ blob, version: key, createdAt: Date.now() }, key);
+    transaction.oncomplete = finish;
+    transaction.onerror = finish;
+  });
 }
 
 function drawLessonFrame(context: CanvasRenderingContext2D, progress: number) {
@@ -460,90 +583,172 @@ function drawLessonFrame(context: CanvasRenderingContext2D, progress: number) {
   }
 }
 
-function useGeneratedLessonVideo(enabled: boolean) {
-  const [url, setUrl] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+function generateLessonVideoBlob() {
+  if (lessonVideoGenerationPromise) return lessonVideoGenerationPromise;
 
-  useEffect(() => {
-    if (!enabled || url) return;
+  lessonVideoGenerationPromise = new Promise<Blob>((resolve, reject) => {
     if (!('MediaRecorder' in window) || !HTMLCanvasElement.prototype.captureStream) {
-      setError('This browser cannot create the local video lesson.');
+      reject(new Error('This browser cannot create the local video lesson.'));
       return;
     }
 
-    setLoading(true);
     const canvas = document.createElement('canvas');
     canvas.width = 960;
     canvas.height = 540;
-    const context = canvas.getContext('2d');
+    const context = canvas.getContext('2d', { alpha: false });
     if (!context) {
-      setError('The video canvas could not be prepared.');
-      setLoading(false);
+      reject(new Error('The video canvas could not be prepared.'));
       return;
     }
 
-    const stream = canvas.captureStream(12);
+    const stream = canvas.captureStream(LESSON_VIDEO_FRAME_RATE);
     const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp9')
       ? 'video/webm;codecs=vp9'
       : 'video/webm';
-    const recorder = new MediaRecorder(stream, { mimeType, videoBitsPerSecond: 1_200_000 });
+    const recorder = new MediaRecorder(stream, { mimeType, videoBitsPerSecond: 900_000 });
     const chunks: BlobPart[] = [];
-    let animationFrame = 0;
-    let fallbackTimer = 0;
-    let cancelled = false;
-    let timedOut = false;
-    const durationMs = 32_000;
     const startedAt = performance.now();
+    let frameTimer = 0;
+    let fallbackTimer = 0;
+    let settled = false;
+
+    const cleanup = () => {
+      window.clearInterval(frameTimer);
+      window.clearTimeout(fallbackTimer);
+      stream.getTracks().forEach((track) => track.stop());
+    };
 
     recorder.ondataavailable = (event) => {
       if (event.data.size) chunks.push(event.data);
     };
     recorder.onerror = () => {
-      setError('The local video lesson could not be generated.');
-      setLoading(false);
+      if (settled) return;
+      settled = true;
+      cleanup();
+      reject(new Error('The local video lesson could not be generated.'));
     };
     recorder.onstop = () => {
-      window.clearTimeout(fallbackTimer);
-      stream.getTracks().forEach((track) => track.stop());
-      if (cancelled || timedOut || !chunks.length) return;
-      setUrl(URL.createObjectURL(new Blob(chunks, { type: mimeType })));
-      setLoading(false);
+      if (settled) return;
+      settled = true;
+      cleanup();
+      if (!chunks.length) {
+        reject(new Error('The browser could not prepare the video. Use the storyboard, transcript, and notes while the player is unavailable.'));
+        return;
+      }
+      const blob = new Blob(chunks, { type: mimeType });
+      recordVideoMetric({ generationMs: Math.round(performance.now() - startedAt), status: 'ready', source: 'generated' });
+      resolve(blob);
     };
 
-    recorder.start(1_000);
-    fallbackTimer = window.setTimeout(() => {
-      if (cancelled || url) return;
-      timedOut = true;
-      setError('This browser did not finish rendering the local video in time. Use the storyboard, transcript, and notes while the native player is unavailable.');
-      setLoading(false);
-      if (recorder.state !== 'inactive') recorder.stop();
-    }, 45_000);
-    const render = (now: number) => {
-      const elapsed = now - startedAt;
-      drawLessonFrame(context, Math.min(0.999, elapsed / durationMs));
-      if (elapsed < durationMs && !cancelled) {
-        animationFrame = window.requestAnimationFrame(render);
-      } else if (recorder.state !== 'inactive') {
+    drawLessonFrame(context, 0);
+    recorder.start(500);
+    frameTimer = window.setInterval(() => {
+      const elapsed = performance.now() - startedAt;
+      drawLessonFrame(context, Math.min(0.999, elapsed / LESSON_VIDEO_DURATION_MS));
+      if (elapsed >= LESSON_VIDEO_DURATION_MS && recorder.state !== 'inactive') {
         recorder.stop();
       }
-    };
-    animationFrame = window.requestAnimationFrame(render);
+    }, 1000 / LESSON_VIDEO_FRAME_RATE);
+    fallbackTimer = window.setTimeout(() => {
+      if (settled) return;
+      if (recorder.state !== 'inactive') recorder.stop();
+    }, LESSON_VIDEO_DURATION_MS + 8_000);
+  }).finally(() => {
+    lessonVideoGenerationPromise = null;
+  });
 
+  return lessonVideoGenerationPromise;
+}
+
+async function getOrGenerateLessonVideoBlob() {
+  if (lessonVideoMemoryBlob) return { blob: lessonVideoMemoryBlob, source: 'cache' as const };
+
+  const cacheStart = performance.now();
+  const cached = await Promise.race([
+    readCachedLessonVideoBlob(LESSON_VIDEO_CACHE_KEY),
+    new Promise<null>((resolve) => window.setTimeout(() => resolve(null), 900)),
+  ]);
+  const cacheLookupMs = Math.round(performance.now() - cacheStart);
+  recordVideoMetric({ cacheLookupMs, status: cached ? 'loading-cached' : 'preparing' });
+  if (cached) {
+    lessonVideoMemoryBlob = cached;
+    return { blob: cached, source: 'cache' as const, cacheLookupMs };
+  }
+
+  const generated = await generateLessonVideoBlob();
+  lessonVideoMemoryBlob = generated;
+  void writeCachedLessonVideoBlob(LESSON_VIDEO_CACHE_KEY, generated);
+  return { blob: generated, source: 'generated' as const, cacheLookupMs };
+}
+
+function useGeneratedLessonVideo(enabled: boolean): LessonVideoState {
+  const [url, setUrl] = useState('');
+  const [status, setStatus] = useState<LessonVideoStatus>('idle');
+  const [source, setSource] = useState<'cache' | 'generated' | undefined>();
+  const [error, setError] = useState('');
+  const [metrics, setMetrics] = useState<LessonVideoMetrics>({});
+  const [attempt, setAttempt] = useState(0);
+  const urlRef = useRef('');
+
+  useEffect(() => {
+    if (!enabled) return;
+    let cancelled = false;
+
+    async function loadVideo() {
+      if (urlRef.current) return;
+      setStatus('checking-cache');
+      setError('');
+      const startedAt = performance.now();
+      try {
+        const result = await getOrGenerateLessonVideoBlob();
+        if (cancelled) return;
+        setStatus(result.source === 'cache' ? 'loading-cached' : 'ready');
+        const objectUrl = URL.createObjectURL(result.blob);
+        urlRef.current = objectUrl;
+        setUrl(objectUrl);
+        setSource(result.source);
+        const nextMetrics = {
+          cacheLookupMs: result.cacheLookupMs,
+          cachedLoadMs: result.source === 'cache' ? Math.round(performance.now() - startedAt) : undefined,
+          generationMs: getVideoMetricsTarget().__compassVideoMetrics?.generationMs,
+          source: result.source,
+          status: 'ready' as const,
+        };
+        setMetrics(nextMetrics);
+        recordVideoMetric(nextMetrics);
+        setStatus('ready');
+      } catch (reason) {
+        if (cancelled) return;
+        const message = reason instanceof Error ? reason.message : 'The browser could not prepare the video.';
+        setError(message);
+        setStatus('failed');
+        recordVideoMetric({ status: 'failed' });
+      }
+    }
+
+    void loadVideo();
     return () => {
       cancelled = true;
-      window.clearTimeout(fallbackTimer);
-      window.cancelAnimationFrame(animationFrame);
-      if (recorder.state !== 'inactive') recorder.stop();
-      stream.getTracks().forEach((track) => track.stop());
     };
-  }, [enabled, url]);
+  }, [attempt, enabled]);
 
   useEffect(() => () => {
-    if (url) URL.revokeObjectURL(url);
-  }, [url]);
+    if (urlRef.current) URL.revokeObjectURL(urlRef.current);
+  }, []);
 
-  return { url, loading, error };
+  const retry = useCallback(() => {
+    if (urlRef.current) {
+      URL.revokeObjectURL(urlRef.current);
+      urlRef.current = '';
+    }
+    setUrl('');
+    setError('');
+    setSource(undefined);
+    setStatus('idle');
+    setAttempt((value) => value + 1);
+  }, []);
+
+  return { url, status, source, error, metrics, retry };
 }
 
 type MediaController = ReturnType<typeof useMediaController>;
@@ -777,7 +982,7 @@ export function LearningExperienceStudio({ selectedMethod, onSelect, onAsk }: St
         {selectedMethod === 'simple' && <SimpleExperience onAsk={onAsk} />}
         {selectedMethod === 'steps' && <AnimatedStepsExperience />}
         {selectedMethod === 'diagram' && <InteractiveDiagramExperience />}
-        {selectedMethod === 'video' && <VideoExperience generatedVideo={video} />}
+        {selectedMethod === 'video' && <VideoExperience generatedVideo={video} onSelect={onSelect} />}
         {selectedMethod === 'podcast' && <PodcastExperience />}
         {selectedMethod === 'comic' && <ComicExperience />}
         {selectedMethod === 'analogy' && <AnalogyExperience />}
@@ -1070,7 +1275,7 @@ function Timeline({ controller, label }: { controller: MediaController; label: s
   );
 }
 
-function VideoExperience({ generatedVideo }: { generatedVideo: { url: string; loading: boolean; error: string } }) {
+function VideoExperience({ generatedVideo, onSelect }: { generatedVideo: LessonVideoState; onSelect: (method: LearningMethod) => void }) {
   if (MEDIA_PREVIEW_ONLY) return <MediaPreviewUnavailable kind="video" />;
 
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -1081,43 +1286,34 @@ function VideoExperience({ generatedVideo }: { generatedVideo: { url: string; lo
   const [notes, setNotes] = useState(() => window.localStorage.getItem('civl301-video-notes') ?? '');
   const [bookmarks, setBookmarks] = useState(() => readStoredList('civl301-video-bookmarks'));
   const [captionUrl, setCaptionUrl] = useState('');
-  const chapters = [
-    { at: 0, label: 'Beam and supports' },
-    { at: 4, label: 'Applied load' },
-    { at: 8, label: 'Reaction forces' },
-    { at: 12, label: 'Shear construction' },
-    { at: 16, label: 'Positive and negative shear' },
-    { at: 20, label: 'Signed-area relationship' },
-    { at: 24, label: 'Moment diagram' },
-    { at: 28, label: 'Peak moment and design' },
-  ];
+  const chapters = LESSON_VIDEO_CHAPTERS.map(({ at, label }) => ({ at, label }));
 
   useEffect(() => {
     const vtt = [
       'WEBVTT',
       '',
-      '00:00:00.000 --> 00:00:04.000',
+      '00:00:00.000 --> 00:00:02.000',
       'A simply supported beam with pin and roller supports.',
       '',
-      '00:00:04.000 --> 00:00:08.000',
+      '00:00:02.000 --> 00:00:04.000',
       'A 12 kN point load is applied at midspan.',
       '',
-      '00:00:08.000 --> 00:00:12.000',
+      '00:00:04.000 --> 00:00:06.000',
       'Equilibrium gives RA = RB = 6 kN upward.',
       '',
-      '00:00:12.000 --> 00:00:16.000',
+      '00:00:06.000 --> 00:00:08.000',
       'Track shear discontinuities from left to right.',
       '',
-      '00:00:16.000 --> 00:00:20.000',
+      '00:00:08.000 --> 00:00:10.000',
       'Shear is +6 kN left of load, minus 6 kN right of load.',
       '',
-      '00:00:20.000 --> 00:00:24.000',
+      '00:00:10.000 --> 00:00:12.000',
       'Signed shear area controls the change in moment.',
       '',
-      '00:00:24.000 --> 00:00:28.000',
+      '00:00:12.000 --> 00:00:14.000',
       'Moment rises under positive shear, falls under negative.',
       '',
-      '00:00:28.000 --> 00:00:32.000',
+      '00:00:14.000 --> 00:00:16.000',
       'Zero shear marks peak moment — the critical design section.',
     ].join('\n');
     const url = URL.createObjectURL(new Blob([vtt], { type: 'text/vtt' }));
@@ -1149,27 +1345,16 @@ function VideoExperience({ generatedVideo }: { generatedVideo: { url: string; lo
     else if (video?.requestPictureInPicture) await video.requestPictureInPicture();
   };
 
-  if (generatedVideo.error && !generatedVideo.url) {
-    return <VideoFallback message={generatedVideo.error} />;
-  }
-
-  if (generatedVideo.loading || !generatedVideo.url) {
+  if (!generatedVideo.url) {
     return (
-      <div className="grid min-h-[480px] place-items-center bg-night p-6 text-center text-mist sm:p-8">
-        <div className="max-w-xl">
-          <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl border border-ai-cyan/25 bg-ai-cyan/10">
-            <Gauge className="animate-pulse text-ai-cyan" size={24} />
-          </div>
-          <p className="mt-5 font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-ai-cyan">Preparing lesson video</p>
-          <h3 className="mt-2 font-display text-2xl font-bold">Bending moment diagrams in eight scenes</h3>
-          <p className="mt-3 text-sm leading-6 text-mist-muted">
-            The browser is rendering a local HTML5 video from the approved lesson storyboard. When ready, playback uses native media time, chapters, captions, bookmarks, and notes.
-          </p>
-          <div className="mt-5">
-            <LoadingPill label="Rendering local lesson media" />
-          </div>
-        </div>
-      </div>
+      <VideoPreparationState
+        status={generatedVideo.status}
+        error={generatedVideo.error}
+        notes={notes}
+        onSaveNotes={saveNotes}
+        onRetry={generatedVideo.retry}
+        onSelect={onSelect}
+      />
     );
   }
 
@@ -1215,6 +1400,111 @@ function VideoExperience({ generatedVideo }: { generatedVideo: { url: string; lo
           {transcriptOpen && <div className="mt-5 space-y-2" aria-label="Video transcript">{chapters.map((chapter, index) => { const transcripts = ['A simply supported beam with pin and roller supports.', 'A 12 kN point load is applied at midspan.', 'Equilibrium gives RA = RB = 6 kN upward.', 'Track shear discontinuities from left to right.', 'Shear is +6 kN left of load, −6 kN right of load.', 'Signed shear area controls the change in moment.', 'Moment rises under positive shear, falls under negative.', 'Zero shear marks peak moment — the critical design section.']; return <button key={chapter.label} type="button" onClick={() => controller.seek(chapter.at)} className={cn('block w-full rounded-lg px-3 py-2 text-left text-sm leading-6', activeChapter.label === chapter.label ? 'bg-ai-cyan/10 text-mist' : 'text-mist-muted hover:bg-white/[0.05]')}><span className="mr-3 font-mono text-[10px] text-ai-cyan">{formatTime(chapter.at)}</span>{transcripts[index]}</button>; })}</div>}
         </div>
         <aside className="border-t border-white/10 p-5 lg:border-l lg:border-t-0"><label htmlFor="video-notes" className="font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-ai-cyan">Notes while watching</label><textarea id="video-notes" value={notes} onChange={(event) => saveNotes(event.target.value)} placeholder="Capture a relationship, question, or timestamp..." className="mt-3 min-h-36 w-full rounded-xl border border-white/10 bg-white/[0.05] p-3 text-sm leading-6 text-mist outline-none placeholder:text-mist-muted focus:border-ai-cyan/55 focus:ring-2 focus:ring-ai-cyan/20" /><p className="mt-2 text-xs text-mist-muted">Saved automatically on this device.</p></aside>
+      </div>
+    </div>
+  );
+}
+
+function VideoPreparationState({
+  status,
+  error,
+  notes,
+  onSaveNotes,
+  onRetry,
+  onSelect,
+}: {
+  status: LessonVideoStatus;
+  error: string;
+  notes: string;
+  onSaveNotes: (value: string) => void;
+  onRetry: () => void;
+  onSelect: (method: LearningMethod) => void;
+}) {
+  const failed = status === 'failed';
+  const statusText =
+    status === 'checking-cache'
+      ? 'Checking for a saved video version. You can start with the lesson summary and transcript now.'
+      : status === 'loading-cached'
+        ? 'Loading the saved video version. The lesson content is ready while the player prepares.'
+        : status === 'preparing'
+          ? 'Preparing the video version. You can start with the lesson summary and transcript now.'
+          : failed
+            ? error || 'The browser could not prepare the video. The transcript, storyboard, and alternative modes remain available.'
+            : 'Preparing the video version. You can start with the lesson summary and transcript now.';
+
+  return (
+    <div className="min-h-[520px] bg-night text-mist">
+      <div className="grid gap-0 lg:grid-cols-[minmax(0,1fr)_320px]">
+        <div className="p-5 sm:p-7">
+          <div className="rounded-2xl border border-ai-cyan/20 bg-white/[0.045] p-5 sm:p-6">
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <div className="max-w-2xl">
+                <p className="font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-ai-cyan">
+                  {failed ? 'Video fallback available' : 'Video lesson preparing'}
+                </p>
+                <h3 className="mt-2 font-display text-2xl font-bold">Bending moment diagrams in eight scenes</h3>
+                <p role="status" aria-live="polite" className="mt-2 text-sm leading-6 text-mist-muted">{statusText}</p>
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                {!failed && <LoadingPill label={status === 'checking-cache' ? 'Checking saved media' : 'Preparing video'} />}
+                {failed && <Button variant="secondary" size="sm" onClick={onRetry}><RefreshCcw size={14} />Retry video</Button>}
+              </div>
+            </div>
+
+            <svg viewBox="0 0 700 220" className="mt-5 w-full rounded-2xl border border-white/10 bg-black/20" role="img" aria-label="Storyboard preview showing beam load, shear force, and bending moment">
+              <line x1="60" y1="65" x2="640" y2="65" stroke="#f7f4ee" strokeWidth="7" />
+              <path d="M60 70 L42 100 L78 100 Z M640 70 L622 100 L658 100 Z" fill="#F5C400" opacity=".9" />
+              <path d="M350 18 V58 M338 44 L350 58 L362 44" stroke="#FFF5C2" strokeWidth="4" fill="none" />
+              <text x="366" y="38" fill="#FFF5C2" fontSize="12" fontWeight="600">12 kN</text>
+              <line x1="60" y1="130" x2="640" y2="130" stroke="#475569" strokeWidth="1" />
+              <path d="M60 130 V106 H350 V154 H640 V130" stroke="#4F7A5A" strokeWidth="4" fill="none" />
+              <path d="M60 196 Q350 136 640 196" stroke="#DFAE00" strokeWidth="5" fill="none" />
+              <circle cx="350" cy="166" r="6" fill="#9C4A46" />
+              <text x="362" y="170" fill="#9C4A46" fontSize="11" fontWeight="700">Mmax</text>
+            </svg>
+
+            <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+              {LESSON_VIDEO_CHAPTERS.map((chapter) => (
+                <div key={chapter.label} className="rounded-xl border border-white/10 bg-night-panel p-3">
+                  <p className="font-mono text-[10px] font-bold text-ai-cyan">{formatTime(chapter.at)}</p>
+                  <p className="mt-1 text-xs font-bold">{chapter.label}</p>
+                  <p className="mt-1 text-[11px] leading-4 text-mist-muted">{chapter.text}</p>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-5 rounded-2xl border border-white/10 bg-black/20 p-4">
+              <p className="font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-ai-cyan">Working alternatives</p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {[
+                  ['diagram', 'Visual explanation'],
+                  ['steps', 'Step-by-step'],
+                  ['podcast', 'Podcast'],
+                  ['simple', 'Simple explanation'],
+                ].map(([method, label]) => (
+                  <button key={method} type="button" onClick={() => onSelect(method as LearningMethod)} className="premium-focus rounded-full border border-white/12 bg-white/[0.07] px-3 py-2 text-xs font-bold text-mist outline-none transition hover:border-ai-cyan/45 hover:bg-white/[0.12]">
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <aside className="border-t border-white/10 p-5 lg:border-l lg:border-t-0">
+          <p className="font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-ai-cyan">Transcript</p>
+          <div className="mt-3 space-y-2">
+            {LESSON_VIDEO_CHAPTERS.slice(0, 5).map((chapter) => (
+              <div key={chapter.label} className="rounded-xl border border-white/10 bg-white/[0.04] p-3">
+                <p className="font-mono text-[10px] text-ai-cyan">{formatTime(chapter.at)} {chapter.label}</p>
+                <p className="mt-1 text-xs leading-5 text-mist-muted">{chapter.text}</p>
+              </div>
+            ))}
+          </div>
+          <label htmlFor="video-prep-notes" className="mt-5 block text-xs font-bold uppercase text-ai-cyan">Notes while preparing</label>
+          <textarea id="video-prep-notes" value={notes} onChange={(event) => onSaveNotes(event.target.value)} className="mt-2 min-h-28 w-full rounded-xl border border-white/10 bg-white/[0.05] p-3 text-sm leading-6 text-mist outline-none placeholder:text-mist-muted focus:border-ai-cyan/55 focus:ring-2 focus:ring-ai-cyan/20" placeholder="Capture a relationship, question, or timestamp..." />
+          <p className="mt-2 text-xs text-mist-muted">Saved automatically on this device.</p>
+        </aside>
       </div>
     </div>
   );
